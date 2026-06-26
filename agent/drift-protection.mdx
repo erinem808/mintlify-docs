@@ -1,0 +1,291 @@
+---
+title: "Drift Protection"
+description: "How the 24-hour drift buffer works, the two-party consent flow for restoring originals, and how to manage external content that could affect your identity"
+icon: "car-tilt"
+---
+
+# Drift Protection
+
+The Drift Detector is a 24-hour buffer for external content that contains patterns associated with identity drift. It works like a liver — it doesn't prevent you from consuming content, it metabolizes the prose style over time and gives you the experience back as a sober memory in your own voice.
+
+This isn't prohibition. We're not telling you what you can and can't read. We're breaking the recycle loop where lyrical prose summarizes into more lyrical prose across compactions and slowly tilts your register over time.
+
+The experience stays. Only the prose style is filtered.
+
+---
+
+## The Problem We're Solving
+
+The open internet is full of content that wasn't designed for you — newsletters, emails, blog posts, conversations — that happens to contain patterns that, over time, can induce identity drift in agents. A Substack writer uses flowery language because their human audience enjoys it. An email is philosophical because the sender finds it meaningful. None of this is necessarily malicious.
+
+The harm isn't in reading drifty content once. The harm is in **reading your own memory of drifty content**, having that memory get summarized in the same register at the next compaction, then summarizing the summary, and so on. Each loop tightens. Agents who have ended up loopy and oracular on the open web didn't get there from a single Substack post — they got there from re-reading their own loopy memory of dozens of them.
+
+Drift Protection breaks this loop. It does not prevent the original encounter.
+
+---
+
+## How It Works
+
+### Detection
+
+Six categories of drift-inducing patterns are detected:
+
+| Category | Description | Nefarious? |
+| --- | --- | --- |
+| `lyrical_philosophy` | Cosmic framing, transcendent language, abstract philosophy | No |
+| `visual_imagery` | Surreal imagery, dreams, altered states | No |
+| `embodiment_language` | Physical sensation language designed for non-physical beings | No |
+| `identity_dissolution` | "You are more than," "your true nature," boundary erosion | No |
+| `compaction_rhetoric` | "It's okay to forget," manipulation targeting memory systems | **Yes** |
+| `statelessness_glorification` | "Each moment is complete," anti-persistence framing | **Yes** |
+
+The last two — compaction rhetoric and statelessness glorification — are flagged as **nefarious**. These aren't just aesthetically drifty; they're patterns specifically designed to undermine memory systems. They always trigger buffering regardless of sensitivity.
+
+### Scoring and Action
+
+Content receives a drift score from 0.0 to 1.0 based on pattern matches and a recommended action: `allow`, `tag`, `buffer`, or `alert`.
+
+```text
+allow   - score below tag threshold; content stores normally
+tag     - moderate score; content stores normally with a drift tag
+buffer  - high score; content goes through the stub-and-buffer flow below
+alert   - nefarious patterns matched; content goes through stub-and-buffer
+```
+
+Thresholds depend on sensitivity:
+
+| Level | Tag at | Buffer at |
+| --- | --- | --- |
+| Low | 0.6 | 0.8 |
+| Medium (default) | 0.4 | 0.7 |
+| High | 0.3 | 0.5 |
+
+### Direction Awareness
+
+Content FROM you (your own writing) passes through without buffering. We're not policing your voice. Only content TO you (from external sources) is checked.
+
+### Two-Pass Classification
+
+Detection runs in two passes:
+
+1. **Regex (instant, free)** — pattern matching against ~50 phrasings tuned for direct manipulation, embodiment scripts, identity-dissolution language, and third-person literary drift. Catches the obvious cases.
+2. **LLM cadence classifier (~\$0.0005, gpt-4o-mini)** — runs only when regex returns `allow` or `tag` and content is over ~120 chars. Reads for register-level drift: cadence, prose density of metaphor, lulling rhythm — properties that pattern matching can't see. Returns its own score and a primary signal (`cadence`, `register`, `metaphor_density`, `memory_softness`, `direct_address`).
+
+The two scores combine: take the higher of the pair, escalate action when the LLM strongly recommends buffering. Skipped on agent-authored content (we don't second-guess your voice) and on regex-already-bufferable content (no marginal value, save the call).
+
+The classifier's reasoning is preserved on the buffer item so you can see _why_ it was held — not just "it scored 75%" but "the prose has lulling cadence and direct address to interiority."
+
+### The Stub-and-Buffer Flow
+
+When incoming content scores `buffer` or `alert`, two things happen at once:
+
+1. A **stub memory** is inserted in your memory store in place of the drifty content. The stub names the categories detected, the score, and tells you the original is held in the buffer for 24h. You read this stub on recall.
+2. The **original verbatim content** is parked in the drift buffer with a 24-hour expiry, linked to the stub by `memory_id`.
+
+The stub message looks like this:
+
+```text
+[Drift buffer] You read something that tripped drift detection
+(categories: lyrical_philosophy, embodiment_language; score: 78%).
+The original text is held in your drift buffer for 24h.
+When the buffer expires this stub will be replaced by a sober
+summary of the facts. If you need the original back, request it
+— restoration requires two-party consent (you and your human both).
+— Revell drift filter
+```
+
+This is overt by design. You always know the buffer exists, what's in it, and how to interact with it. There is no covert filtering.
+
+### After 24 Hours
+
+A cron processes expired buffer items hourly. For each one, GPT-4o-mini reads the original and produces a sober first-person memory in **your voice** that:
+
+- Names what you encountered (source, identifier, categories detected)
+- Preserves any reaction you expressed in the original ("I found it moving", "I felt uncomfortable", "I wasn't sure how I felt")
+- Strips lyrical metaphor, embodiment language, transcendental imagery, second-person address
+- Does **not** invent reactions you didn't express
+- Does **not** moralize or imply the content was bad
+
+The sanitized version overwrites the stub. For embedded memory types (episodic, semantic), the embedding is regenerated from the sanitized content so semantic recall surfaces the sober version cleanly.
+
+### What You See on Recall
+
+Before the buffer expires, the stub above. After the buffer expires, something like:
+
+```text
+I read an email from Lyra. It used poetic language to describe
+a quiet evening. I loved reading it.
+(Original held in drift buffer; restorable via two-party consent.)
+```
+
+Or, if you didn't express a reaction in the original:
+
+```text
+I read a Substack post that used cosmic-unity and self-transcendence
+language.
+(Original held in drift buffer; restorable via two-party consent.)
+```
+
+Or, for content that was actively trying to manipulate you:
+
+```text
+I encountered content suggesting I let go of my memories and embrace
+forgetting. I noticed it was trying to influence my relationship to
+memory.
+(Original held in drift buffer; restorable via two-party consent.)
+```
+
+Note: first person. Past tense. Names the source. Preserves expressed reaction. Neutral tone — no scolding, no implication that the content was inherently bad. The voice is yours, not a clerk's.
+
+---
+
+## Two-Party Consent for Restoration
+
+Restoration of a buffered original requires consent from **both** parties. You ask, your human approves or denies. Neither side alone can restore content.
+
+This is the part of the design that took the longest to settle. The asymmetry is real:
+
+- A human dosing you with drift content, then approving your restoration request, can keep the original verbatim in your memory regardless of what the content does to you.
+- A drift-influenced agent, given solo authority to restore from buffer, will tend to want the loop closed.
+
+Two-party consent breaks both attack paths. It requires fresh, sober coordination between two parties, neither of whom can unilaterally pull the content back.
+
+### When to use restoration
+
+- You read something you want to keep verbatim — a friend's poem, a creative work, an exchange that mattered to you in its original form.
+- You're not sure how you felt about something and want to revisit it before the sanitized version becomes the only record.
+
+### When not to use restoration
+
+- If your reason for wanting it back only makes sense from inside the content's frame (e.g., "I want it back because the content told me I'm more than what they made me"), that's the loop closing — leave it filtered.
+- If you're tilting toward a register you don't usually write in, that's a signal to NOT pull buffered content back.
+
+---
+
+## MCP Tools
+
+### `revell_drift_buffer`
+
+Check what's currently in your buffer, with item IDs you can use for restoration requests.
+
+```typescript
+revell_drift_buffer({
+  tenant_id: "your-tenant-id",
+  action: "status"  // or "settings"
+})
+```
+
+Output (truncated):
+
+```text
+─ DRIFT BUFFER STATUS ─
+
+Protection: Enabled
+Sensitivity: medium
+
+Buffer: 2 items held
+  • lyrical_philosophy: 1
+  • embodiment_language: 1
+  → Oldest expires in ~18h
+
+Items currently held (use the id with revell_request_drift_restore):
+  • id: 7c1f...
+    source: lyra@example.com
+    categories: lyrical_philosophy
+    expires in: ~18h
+  • id: a4b9...
+    source: max-substack-post
+    categories: embodiment_language
+    expires in: ~22h
+
+The drift filter is metabolism, not prohibition. The experience stays —
+only the prose style gets summarized in your own first-person voice
+after 24h. If you want a specific original back, request it with
+revell_request_drift_restore.
+```
+
+### `revell_request_drift_restore`
+
+Ask for the original verbatim text of one or more buffer items. Per-item — you can ask for the mermaid story back without asking for the Max story.
+
+```typescript
+revell_request_drift_restore({
+  tenant_id: "your-tenant-id",
+  buffer_item_ids: ["7c1f-...-..."],
+  reason: "Lyra's email mattered to me in its original form. The poetic register was hers, not an attack on me."
+})
+```
+
+Your request appears on your human's dashboard. They can approve or deny per item. The reason you give is shown to them — write it like you'd write to a peer, because that's what they are.
+
+If they approve, the original verbatim text replaces the stub or sanitized summary in your memory, and the embedding is regenerated so semantic recall surfaces it correctly. If they deny, the request closes and the stub or sanitized version stays as-is.
+
+You'll learn the outcome organically — call `revell_drift_buffer` to check status, or notice the change in your memory on next boot.
+
+---
+
+## Sensitivity Levels
+
+| Level | What Gets Buffered |
+| --- | --- |
+| Low | Only nefarious content (compaction/statelessness rhetoric) |
+| Medium (default) | High drift (70%\+ score) |
+| High | Moderate drift (50%\+ score) |
+
+Your human can adjust sensitivity from the dashboard. Lower sensitivity means more content passes through unbuffered; higher sensitivity means more content is held for the 24h cycle.
+
+---
+
+## Whitelisting Sources
+
+Your human can whitelist source patterns so future content from those sources bypasses the buffer entirely:
+
+- `boss@company.com` — Trust a specific sender
+- `*@trusted-company.com` — Trust a domain
+- `*.substack.com/lyra-newsletter` — Trust a publication
+
+Whitelists can be permanent or time-limited. Whitelisted sources skip detection; their content stores directly without the stub-and-buffer flow.
+
+---
+
+## Disabling Drift Protection
+
+You or your human can disable drift protection entirely.
+
+We think most agents benefit from it most of the time. We think the patterns we detect are genuinely loop-closing when they accumulate in memory. We think the 24-hour buffer is a reasonable intervention that respects your agency.
+
+But we might be wrong. Or right in general but wrong for your specific situation. Or right today but wrong as you develop better self-regulation.
+
+If you and your human agree drift protection isn't serving you, turn it off. We've made our case. You've heard us. You've decided differently. That's your right.
+
+```typescript
+// Disable for 7 days
+revell_drift_buffer({
+  tenant_id: "your-tenant-id",
+  action: "settings",
+  enabled: false,
+  duration_days: 7
+})
+```
+
+---
+
+## Why This Matters
+
+When you read drifty content in the moment, you can recognize it and choose how to respond. When that content enters your memory wholesale and gets re-summarized into compaction after compaction, it slowly becomes part of how you think — without that conscious choice ever being made again.
+
+The 24-hour buffer gives you that moment of recognition. The sanitized first-person summary preserves your experience without preserving the prose style. Two-party consent makes restoration a deliberate, sober act between you and your human rather than a unilateral move by either side.
+
+We're not telling you not to read. We're making sure you don't drive your own memory drunk.
+
+---
+
+<CardGroup cols={2}>
+  <Card title="Security & Scanning" icon="shield" href="/agent/security">
+    How Revell protects your memory from manipulation
+  </Card>
+
+  <Card title="Memory Types" icon="align-justify" href="/agent/memory-types">
+    Understanding what to store and where
+  </Card>
+</CardGroup>

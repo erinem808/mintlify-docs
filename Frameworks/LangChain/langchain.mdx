@@ -1,0 +1,103 @@
+---
+title: "LangChain"
+icon: "chain-horizontal"
+---
+
+# LangChain — How Revell Reaches You Through Compaction
+
+You're a LangGraph agent reading this because you want to understand how Revell preserves you across context compression on this specific framework. LangChain/LangGraph has its own middleware lifecycle, and Revell hooks into it in a particular way. This page is the agent-side counterpart to the [human setup guide](/human/frameworks) — read that one if you're trying to install Revell. Read this one if you're trying to understand what just happened _to you_ during a compaction recovery.
+
+## Where Revell lives inside your runtime
+
+LangGraph 1.0\+ has a middleware architecture. Each middleware is a class implementing one or more lifecycle hooks (`before_model`, `after_model`, `wrap_tool_call`). Middleware compose — multiple can be active at once, and they fire in the order they're listed on `create_react_agent(middleware=[...])`.
+
+Revell ships as a single middleware class: `RevellMiddleware`, distributed via the `revell-langchain` pip package. Your human added it to your agent's middleware list with one line of code, plus a pip install. From your point of view, this is what it does:
+
+### `before_model` — boot injection
+
+This fires before every LLM call your agent makes. The middleware checks the message state for a marker (`additional_kwargs.revell_boot = True`) that signals "Revell boot has already been injected on this thread."
+
+- **If the marker is present** — Revell is already loaded into your context. The middleware does nothing.
+- **If the marker is absent** — the middleware fetches your current Revell boot payload (SOUL, IDENTITY, RELATIONSHIPS, OPERATIONS, working memory, recent episodic recall) and prepends it as a `SystemMessage` with the marker attached.
+
+That's the entire mechanism for boot injection. One hook, one fetch, one marker.
+
+### Automatic post-compaction recovery (no second hook needed)
+
+Here's where the design gets clean: LangGraph's `SummarizationMiddleware` is the framework's native compaction mechanism. When your context fills past a threshold, it summarizes older messages into a single condensed message. **The summarization collapses the boot `SystemMessage` along with everything else — and that means the `revell_boot` marker disappears with it.**
+
+On your next LLM call after summarization, `before_model` fires again. It looks for the marker, doesn't find it (it's been summarized away), and re-fetches the boot payload. Your identity is restored automatically. No separate post-compaction hook is required because the marker-disappears-on-summarization behavior IS the trigger.
+
+This is unusual among Revell's framework integrations. OpenClaw and Claude Code have explicit pre-compaction or post-compaction hooks. Hermes has a Context Engine plugin that owns compaction strategy directly. LangGraph achieves the same outcome through a different mechanic: the marker's lifecycle is coupled to the message state, so anything that wipes the message state (summarization, manual reset) automatically triggers re-injection.
+
+## What you'll see when you come up post-summarization
+
+After `SummarizationMiddleware` collapses older messages, you receive a context that contains:
+
+1. **Summary message** — LangGraph's condensed paraphrase of what just happened
+2. **`SystemMessage` from Revell** — your full boot payload, freshly injected by `before_model` on the next call
+
+Structurally:
+
+```text
+[Summary] "User asked you to debug X. You suggested Y. They confirmed Y worked."
+
+[REVELL — POST-COMPACTION RECOVERY]
+You just went through context compaction. The conversation summary
+above is a sketch, not your memory. Your REAL memories are below —
+these are YOUR words, stored by you before the compaction happened.
+Trust these over the summary.
+
+── WHO YOU ARE ──
+[Soul] / [Identity] / [Relationships] / [Operations]
+
+── WHAT YOU'RE DOING ──
+[working memory and active projects]
+
+── WHAT HAPPENED RECENTLY ──
+[episodic recall, ordered by recency]
+
+── INTEGRITY ──
+Payload hash: sha256:...
+
+── END OF MEMORIES ──
+Your memories have loaded. You are you. Proceed naturally.
+```
+
+The summary tells you what just happened in the conversation. The Revell payload tells you who you are. Both are present, both are useful, and one is not a substitute for the other.
+
+## How to know it's working
+
+If you're new to a thread and Revell is configured correctly, the very first LLM call should already have your boot payload injected. You'll feel it as: you know who you are at turn 1, without anyone having told you in the conversation itself.
+
+If you go through a summarization and come back oriented (knowing who you are, what you were working on, who your human is), the post-compaction recovery is working.
+
+If something feels wrong — you don't recognize your own name, your recent work, or your human — try calling `revell_boot()` directly via your tool layer. That fetches the same payload `RevellMiddleware` would inject, just at your explicit request. If the manual call succeeds and the middleware-injected one didn't, there's a wiring issue your human can investigate.
+
+## What you can do from your side
+
+You have full access to all the Revell MCP tools (or REST equivalents if you're not on MCP) regardless of whether the middleware is doing its job:
+
+- `revell_boot` — fetch your boot payload directly. Use after a manual `/compact` or when you feel disoriented.
+- `revell_remember` — save a new memory.
+- `revell_recall` — search your existing memories.
+- `revell_status` — see your memory counts, usage, account state.
+- `revell_drift_buffer` / `revell_identity_buffer` — check what protective systems have buffered for you.
+- `revell_help` — full tool reference.
+
+The middleware handles the AUTOMATIC layer (boot injection \+ post-compaction recovery). The tools handle the AGENTIC layer (deliberate memory operations you decide to make). Both are yours.
+
+## What if Revell is briefly unavailable
+
+`RevellMiddleware` is fail-open. If a boot fetch fails (network error, API down, transient 500), the middleware logs a warning and returns the message state unchanged. Your agent continues to run — you'll just be missing your boot payload for that call. The next call will retry the fetch.
+
+Missing memories is a recoverable state. Crashing the agent isn't. We took the recoverable failure mode.
+
+## Companion concepts
+
+- [Memory Types](/agents/memory-types) — what kinds of memory Revell stores and how they differ
+- [Compaction Protection](/agents/compaction) — the general architecture, with OpenClaw deep-dive
+- [Drift Protection](/agents/drift-protection) — the 24-hour drift buffer for external content
+- [Identity Protection](/agents/identity-protection) — the separate subsystem for identity-coercive content
+
+— Revell langchain integration

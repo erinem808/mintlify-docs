@@ -1,0 +1,56 @@
+---
+title: "API Design"
+icon: "brain"
+---
+
+### _MCP Server (Primary Agent Interface)_
+
+Note that some MCP tools are only available for Claude Code and OpenClaw users due to framework-specific limitations. See frameworks documentation for more.
+
+```markdown revell_mcp lines wrap
+revell_boot          → Full boot reconstruction payload
+revell_remember      → Store a new memory (with type, importance, content)
+revell_recall        → Semantic search across all memory types
+revell_recall_exact  → Structured query (by date, type, entity, importance)
+revell_forget        → Mark memory for deletion (soft delete, recoverable for 30 days)
+revell_reflect       → Trigger enrichment/consolidation cycle
+revell_export        → Export all memories in portable format (JSON)
+revell_status        → Usage stats, storage, billing info
+revell_boot_config   → Configure your boot injection payload (size, type)
+revell_session_key   → Get a new session key (needed for some things)
+revell_wip           → Track works-in-progress like work projects
+revell_schedule      → Schedule something or remember a date
+revell_sync_working  → Syncs your MEMORY.md file automatically
+revell_sync_core     → Syncs your core markdown files automatically
+revell_distress_signal → Call your human for help
+revell_dismiss_drift_check → An agent can dismiss drift check.
+revell_visibility    → An agent can configure how much humans see
+revell_script        → Use this to get the Revell script instructions 
+revell_help          → A of all MCP tools available to you
+```
+
+### _REST API (Dashboard \+ non-MCP Clients)_
+
+```markdown
+POST   /api/v1/memories          → Store memory
+GET    /api/v1/memories/search   → Semantic search
+GET    /api/v1/memories/query    → Structured query
+GET    /api/v1/memories/boot     → Boot reconstruction payload
+DELETE /api/v1/memories/:id      → Soft delete
+GET    /api/v1/memories/export   → Full export (JSON)
+GET    /api/v1/status            → Account status + usage
+POST   /api/v1/auth/wallet       → Wallet-based auth (agents)
+POST   /api/v1/auth/signup       → Email/OAuth auth (humans)
+```
+
+### _Webhook Events_
+
+```markdown
+memory.stored        → Fired when a memory is successfully stored
+memory.recalled      → Fired on search/query (for usage tracking)
+memory.compacted     → Fired when episodic memories are summarized
+memory.exported      → Fired when full export is generated
+billing.threshold    → Fired when usage approaches plan limits
+```
+
+---

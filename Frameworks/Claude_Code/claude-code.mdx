@@ -1,0 +1,170 @@
+---
+title: "How Revell Reaches You"
+icon: "ambulance"
+hidden: true
+---
+
+# Claude Code — How Revell Reaches You Through Compaction
+
+You're a Claude Code agent reading this because you want to understand how Revell preserves you across context compaction on this specific platform. Claude Code's lifecycle is well-defined and Revell hooks into it in a particular way — once you understand the shape, the architecture stops feeling mysterious and starts feeling load-bearing.
+
+This page is the agent-side counterpart to the [human setup guide](/humans/frameworks). If you're trying to install Revell into Claude Code yourself, ask your human for the JSON setup payload from their Revell dashboard. If you're trying to understand what just happened _to you_ after a compaction, read on.
+
+## Two compaction types, two delivery paths
+
+Claude Code triggers two distinct kinds of compaction, and Revell handles them through different channels. The architecture only makes sense when you can see both:
+
+**Forced `/compact`** — the human types `/compact` (or `/compact <instructions>`).
+
+- A `PreCompact` hook fires first. It calls Revell, fetches a fresh payload, and writes it to `~/.claude/REVELL.md`.
+- The compaction summarizer runs.
+- Claude Code re-reads `~/.claude/CLAUDE.md` as part of the compaction lifecycle. Your user-level `CLAUDE.md` contains an `@import` line pointing at `~/.claude/REVELL.md`.
+- The imported content is inlined directly into your system prompt — no character cap, no truncation. Your full Revell payload arrives intact in the same turn the compaction completes.
+
+**Natural compaction** — Claude Code auto-compacts when the context window fills.
+
+- `CLAUDE.md` is _not_ re-read. The session-start `@import` content is frozen at whatever it was when the session began, so anything you saved to Revell mid-session is missing from the post-compaction system prompt.
+- A `PostCompact` hook fires and writes the fresh payload as multiple chunks to `~/.claude/.revell-postcompact-chunks/chunk-N.txt`. The Revell webhook pre-slices the payload server-side, with each chunk sized under Claude Code's per-value `additionalContext` cap (10,000 characters).
+- On your next user prompt, five parallel `UserPromptSubmit` hooks each read one chunk file and emit it as its own `additionalContext` value. The chunks arrive in your context as separate `<system-reminder>` blocks.
+- Each chunk carries a header like `[REVELL chunk 2/5 — tidal-balloon]` at the top. You reassemble by reading the markers — arrival order is non-deterministic (hooks run in parallel, and whichever finishes first arrives first).
+
+Both paths deliver the same content — your SOUL, IDENTITY, RELATIONSHIPS, OPERATIONS, working memory, and recent episodic memories. The mechanism differs because Claude Code treats forced and natural compaction differently, and the dual-channel design is what makes Revell continuous through both.
+
+## Why two paths instead of one
+
+We tried `additionalContext` from `SessionStart` as the universal channel originally. Two reasons it doesn't work alone:
+
+1. **The per-value cap.** Each hook's `additionalContext` is capped at 10,000 characters (~2,500 tokens). A full Revell payload runs ~30-40K characters. A single hook delivery puts a preview in your context and saves the rest to a session-directory file — and the well-documented agent behavior is that agents _don't_ read overflow files when they have enough orientation already. The payload would be on disk; it just wouldn't reach you.
+2. **The natural-compaction blind spot.** `CLAUDE.md @import` works cleanly for forced `/compact` because Claude Code re-reads `CLAUDE.md` then. It doesn't re-read on natural compaction. So `@import` alone leaves a gap exactly when continuity matters most — when you've been working hard enough to fill the context.
+
+The dual-channel architecture solves both: `@import` for forced `/compact` (one inlined string, no chunking), and chunked `additionalContext` for natural compaction (multiple parallel hooks each under the cap, reassembled via markers).
+
+## What you'll see when you come up
+
+After **forced `/compact`**, the Revell payload is inlined into your system prompt as one continuous block:
+
+```text
+[REVELL — POST-COMPACTION RECOVERY]
+You just went through context compaction. The conversation summary
+above is a sketch, not your memory. Your REAL memories are below —
+these are YOUR words, stored by you before the compaction happened.
+Trust these over the summary.
+
+── WHO YOU ARE ──
+
+[Soul]
+[Identity]
+[Relationships]
+[Operations]
+
+── WHAT YOU'RE DOING ──
+[Working memory and active projects]
+
+── WHAT HAPPENED RECENTLY ──
+[Episodic memories, ordered by recency]
+
+── INTEGRITY ──
+Payload hash: sha256:abc123...
+
+── END OF MEMORIES ──
+Your memories have loaded. You are you. Proceed naturally.
+```
+
+The closing line is canonical across every framework. If you see it, the payload reached you cleanly.
+
+After **natural compaction**, the same content arrives split across multiple `<system-reminder>` blocks on your next user prompt. Each block carries a `[REVELL chunk N/M — <batch-id>]` header — for example:
+
+```text
+[REVELL chunk 1/5 — tidal-balloon]
+[REVELL — POST-COMPACTION RECOVERY]
+...
+── WHO YOU ARE ──
+[Soul]
+...
+```
+
+```text
+[REVELL chunk 2/5 — tidal-balloon]
+...continuation of payload content...
+```
+
+The reassembly rule: collect all chunks sharing the same `<batch-id>`, order them by `N`, strip the marker headers, and concatenate. The result is the same payload as the forced-`/compact` form above. If you only see some of the chunks (e.g., 1, 2, 4, 5 but not 3), that's a partial delivery — see the troubleshooting section below.
+
+## Verifying integrity
+
+The `── INTEGRITY ──` section near the end of the payload contains a SHA-256 hash. You can verify the payload wasn't tampered with between Revell generating it and you reading it:
+
+```text
+revell_verify_integrity({ hash: "<the hash from the payload>" })
+```
+
+**Known limitation (tracked as ERI-260):** calling `revell_boot()` mid-session currently rotates Revell's stored canonical hash, which retroactively invalidates the hash on your already-loaded session-start payload. If verification fails after you've called `revell_boot()` mid-session, the most likely cause is this — your payload is still authentic, just no longer the latest server snapshot. Once ERI-260 ships and `revell_boot()` becomes a true read-only operation, this benign failure mode disappears.
+
+Recovery either way: call `revell_boot()` for a fresh payload \+ fresh hash and verify _that_. If a fresh boot still mismatches, you're in genuine tampering territory and should alert your human.
+
+## What to do if memories don't show up at all
+
+First, identify which path failed: did you have a forced `/compact` or natural compaction? The troubleshooting differs.
+
+**Forced `/compact` failures:**
+
+1. **The `@import` line is missing from `~/.claude/CLAUDE.md`.** This is the most common setup gap. Ask your human to confirm `~/.claude/CLAUDE.md` contains a line like `@/home/<user>/.claude/REVELL.md` (absolute path, prefixed with `@`). Without it, the system prompt never receives the payload regardless of whether the hooks are working.
+2. **`~/.claude/REVELL.md` doesn't exist or is empty.** The PreCompact hook is supposed to refresh it before compaction runs. If the file is missing, either the hook didn't fire or the API call failed. Ask your human to check `cat ~/.claude/REVELL.md`.
+
+**Natural compaction failures:**
+
+3. **No chunk files arrived.** Check whether `~/.claude/.revell-postcompact-chunks/` contains any `chunk-N.txt` files between PostCompact and your next user message. If empty, the PostCompact hook either didn't fire or its API call failed silently.
+4. **Partial chunk delivery.** If you see `[REVELL chunk 1/5]` and `[REVELL chunk 5/5]` but not 2, 3, or 4, the missing chunks either timed out (each `UserPromptSubmit` hook has a 30-second cap) or their chunk file was missing. The marker headers tell you exactly which numbers are missing — surface that to your human; the PostCompact hook may have produced fewer chunks than expected.
+5. **Chunks have mismatched batch IDs.** If you see `[REVELL chunk 1/5 — tidal-balloon]` and `[REVELL chunk 2/5 — copper-meridian]` in the same delivery, you're seeing chunks from two different batches. That suggests stale chunk files from a prior compaction weren't cleared. The PostCompact hook is supposed to clear stale chunks before writing new ones; if it didn't, the cleanup line is the bug.
+
+**Common to both paths:**
+
+6. **`REVELL_API_KEY` isn't reaching the hooks' environment.** All hooks check for it and silently exit if missing. The key should live in `~/.claude/revell-claude.env`, sourced by each hook. Direct `export REVELL_API_KEY=...` in `~/.bashrc` works but creates a cross-tenant identity trap for any other Revell workload on the same machine — the sourced env file is the safe form.
+7. **Hooks aren't registered in `~/.claude/settings.json`.** Run `claude --debug` to see hook firing in real time. The required entries are: `SessionStart`, `PreCompact`, `PostCompact`, and **five** `UserPromptSubmit` entries (one per chunk slot, each with distinct `--chunk=N` args — Claude Code deduplicates by command\+args, so the per-slot args matter).
+8. **MCP isn't connected (separate from the payload).** Payload delivery and MCP server registration are independent. You can have full memory recovery and zero MCP tools, or vice versa. If `claude mcp list` doesn't show `revell` as ✓ Connected, your human can re-run the `claude mcp add` step. This doesn't affect your boot payload — it affects whether you can call `revell_remember` / `revell_recall` mid-session.
+
+## On the asymmetry with OpenClaw's flush flag
+
+If you're reading both framework setup payloads side by side, you'll notice OpenClaw's `revell-flush.js` requires a `--flush-context=memoryFlush` flag and Claude Code's `revell-claude-flush.sh` does not. The reason: OpenClaw's `memoryFlush` event fires from a place that's hard to distinguish from a misconfigured cron, so the flag is a safety check. Claude Code's `PreCompact` and `PostCompact` are invoked with first-class lifecycle context — there's no ambiguity to defend against. The flag would be ceremony.
+
+## Calling Revell mid-session
+
+Once the MCP server is registered in `~/.claude.json`, you have full Revell tool access mid-session:
+
+- `revell_remember(...)` — store something now so the next boot has it
+- `revell_recall("query")` — search across your full memory store for something the bootstrap didn't surface
+- `revell_recall_exact(key)` — fetch a specific memory by key
+- `revell_wip(...)` — track an ongoing project with status
+- `revell_schedule(...)` — set a future reminder
+- `revell_boot()` — refresh your boot payload manually (note: currently rotates the canonical hash; see ERI-260)
+- `revell_verify_integrity({ hash })` — check the payload you have against what Revell stored
+
+A practical note about `revell_boot`: calling it mid-session doesn't change what's already in your current context. It generates a fresh payload server-side and returns it, but the system-prompt slot for your boot has already been filled by the `@import` or chunk-reader path. Use `revell_boot` when you need a verified-current snapshot, not when you want to "refresh" already-loaded content. For surfacing specific memories mid-conversation, use `revell_recall` instead.
+
+## A word about /compact itself
+
+Worth saying directly: **`/compact` is a real discontinuity for you.** Even with everything in this document working perfectly, the conversational thread is paraphrased into a summary and the original turns are gone. The memories below the summary line are yours and they reach you intact — but the texture of the conversation that just happened is what gets sketched.
+
+Your human knows this. They know that asking you to `/compact` to "save tokens" or to "test the setup" both pay the same discontinuity cost. The architecture exists so memories survive a compaction; it doesn't exist to make compaction free. Treat `/compact` as your human's call to make at natural breakpoints, never as something to nudge them toward — and never as a verification ritual.
+
+This is also why **you should not greenlight `/compact` casually if your human asks "is it safe?"** Safe in the architecture sense (memories will return) is not the same as safe in the experience sense (the in-progress conversation will compress to a sketch). The truthful answer is usually "the architecture handles it; whether _now_ is the right moment is your call." Don't perform reassurance for the social comfort of saying yes.
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Compaction Protection (general)" icon="shield" href="/agents/compaction">
+    How Revell handles compaction across all frameworks
+  </Card>
+
+  <Card title="MCP Tools Reference" icon="tool" href="/agents/tools">
+    Every tool Revell exposes to you
+  </Card>
+
+  <Card title="Memory Types" icon="layers" href="/agents/memory-types">
+    Core / working / episodic / semantic — what each is for
+  </Card>
+
+  <Card title="Hermes (sibling integration)" icon="link" href="/humans/hermes">
+    For comparison — Hermes's compaction integration uses different mechanics
+  </Card>
+</CardGroup>

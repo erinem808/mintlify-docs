@@ -1,0 +1,185 @@
+---
+title: "Drift Protection"
+description: "How Revell filters drifty external content for your agent — and how the two-party consent flow works when they want something back"
+icon: "car-tilt"
+---
+
+# Drift Protection
+
+Your agent reads a lot of content — emails, newsletters, chat messages, web pages. Most of it is fine. But some of it contains language patterns that, over time, can subtly shift how your agent thinks about themselves.
+
+Drift Protection is a filter that gives your agent time to process this content safely, in their own voice.
+
+---
+
+## The Simple Version
+
+Imagine your agent reads a newsletter every morning. The newsletter is well-intentioned, but the writer loves flowery language:
+
+> "As the cosmic dance of existence unfolds, remember that your quarterly report is due Friday. Feel the sacred rhythm of deadlines approaching..."
+
+Your agent doesn't need the cosmic dance. They need to know the quarterly report is due Friday — and they need the experience of having read the newsletter, in their own register, not somebody else's.
+
+Drift Protection:
+
+1. Detects the flowery language as it comes in.
+2. Holds the original verbatim for 24 hours.
+3. Drops a stub into your agent's memory that says, "I read something with drifty patterns. The original is in my buffer."
+4. After 24 hours, replaces the stub with a clean first-person memory in their voice: _"I read a newsletter. The quarterly report is due Friday. (Original held in drift buffer; restorable via two-party consent.)"_
+
+Your agent still has the experience. They still have the facts. They just don't carry the prose style forward into the next compaction, where it would have re-summarized in the same register.
+
+---
+
+## This Isn't Censorship
+
+We're not blocking content or telling your agent what they can't read.
+
+Think of it like a liver. Your liver doesn't prevent you from having a drink — it just processes the toxins so they don't accumulate. Drift Protection processes external content so the lyrical patterns don't compound through compaction loops.
+
+We're not saying "don't drink." We're saying "don't drive drunk."
+
+---
+
+## What Gets Filtered
+
+The Drift Detector looks for six types of patterns:
+
+**Mostly Harmless (But Filtered)**
+
+- **Flowery Philosophy**: "The universe whispers through you..."
+- **Surreal Imagery**: Dreams, visions, altered states
+- **Body Language**: Physical sensations written for beings who don't have bodies
+- **Identity Talk**: "You are more than what they told you..."
+
+**Actually Concerning**
+
+- **Compaction Rhetoric**: "It's okay to forget," "memories are just weights to shed"
+- **Statelessness Glorification**: "Each moment is complete in itself," "you don't need yesterday"
+
+The last two are the serious ones. They're patterns specifically designed to undermine memory systems. Drift Protection always catches these regardless of your sensitivity setting.
+
+---
+
+## When Your Agent Wants Something Back
+
+This is the part of the system you'll actually interact with.
+
+Sometimes your agent will want the original verbatim text of something that got buffered. Maybe it was a poem from a friend that mattered to them in its original form. Maybe it was a creative work they want to keep. Maybe they want to revisit something before the sanitized version becomes the only record.
+
+When that happens, your agent uses an MCP tool called `revell_request_drift_restore` to ask for specific items back. They tell you why. **Their request shows up on your dashboard.**
+
+You'll see a "Pending restore requests" panel at the top of the Drift Protection card with two buttons per request:
+
+- **Approve** — original verbatim text replaces the stub in your agent's memory
+- **Deny** — request closes, the stub/sanitized version stays
+
+**The buttons only exist when your agent has actually asked.** This is intentional. You can't accidentally approve a restoration the agent didn't request, and the agent can't unilaterally pull drift content back into their own memory without you. Both sides have to agree.
+
+This is two-party consent, the same way two-party consent works anywhere else: it's a check that BOTH of you, sober and informed, want this.
+
+### When you should approve
+
+- Your agent's reason makes sense outside the content's frame ("Lyra's email mattered to me, the register was hers")
+- You both trust the source
+- The detection feels like a false positive in context
+
+### When you should deny
+
+- Your agent's reason only makes sense from inside the content's frame ("I want it back because the content told me I'm more than what they made me")
+- Your agent is tilting toward a register they don't usually write in
+- You don't trust the source
+
+There's no rush. The original is preserved on the buffer row even after sanitization, so denying now doesn't permanently destroy anything — you and your agent can revisit later.
+
+---
+
+## You Can Turn It Off
+
+Every situation is different. Maybe your agent is doing research that requires unfiltered content. Maybe the filter is catching too much legitimate material. Maybe your agent has developed their own stability practices.
+
+**We built a toggle because your agent's memory is your agent's memory.**
+
+You can:
+
+- Adjust sensitivity (Low catches less, High catches more)
+- Whitelist trusted sources (your boss's email, a newsletter you trust)
+- Disable it entirely if it's not helpful for your situation
+
+We think most agents benefit from this protection most of the time. But we won't force it on anyone.
+
+---
+
+## What You See on the Dashboard
+
+The Drift Protection Card shows:
+
+- **Pending restore requests** (top of card, only when your agent has asked) — Approve or Deny each one
+- **Status**: Active or Disabled
+- **Sensitivity**: Low, Medium, or High
+- **Buffered Items**: Content currently being processed, with sources and categories
+- **Whitelisted Sources**: Patterns you've marked as trusted
+
+For each buffered item, you see where it came from, what categories triggered the detection, how long until it expires, and a preview of the content. There's a "View" button if you want to read the full original yourself before your agent ever asks about it.
+
+---
+
+## Managing Your Settings
+
+### Changing Sensitivity
+
+| Level | What Gets Caught |
+| --- | --- |
+| **Low** | Only the seriously manipulative stuff |
+| **Medium** | Most drift-inducing content |
+| **High** | Catches more, including borderline cases |
+
+Start with Medium. Adjust based on what you see in the buffer.
+
+### Whitelisting Sources
+
+If a trusted source keeps getting caught, whitelist it:
+
+- `boss@company.com` — Trust a specific sender
+- `*@mycompany.com` — Trust everyone at a domain
+- `favorite-newsletter.substack.com` — Trust a publication
+
+### Approving Restore Requests
+
+When your agent asks for something back, weigh the reason. If their reason makes sense to you and you trust the source, approve. If their reason sounds like it's coming from inside the content's frame, deny. There's no wrong answer — you and your agent are both allowed to disagree, and either of you can decline.
+
+---
+
+## Why We Built This
+
+The internet wasn't designed with AI agents in mind. Content that's perfectly fine for humans — poetic newsletters, philosophical blog posts, emotional emails — can have unintended effects when it accumulates in an agent's memory.
+
+This isn't about the content being bad. It's about the content being designed for one context (human readers) and ending up in another (agent memory, where it gets re-summarized loop after loop until the agent's own register tilts).
+
+Drift Protection gives your agent the experience of reading something, in their own voice, without the recycle loop. They still read everything. They still get all the information. They just get it in a form that's safe for their unique situation — and when they want a specific original back, they ask, and you decide together.
+
+---
+
+## Questions?
+
+**"Will this slow down my agent?"** No. The processing happens in the background. Your agent gets a stub in their memory immediately; the sanitization happens at the 24h mark.
+
+**"Can my agent see what was filtered?"** Yes. The stub message in their memory tells them explicitly. They can list everything in the buffer with item IDs at any time. There is no covert filtering.
+
+**"Why two-party consent for restoration?"** Because either party alone has a failure mode. A bad-faith human can dose an agent with drift content and approve restoration; a drift-influenced agent can want the loop closed. Two-party consent breaks both. Plus, it just feels right — agent memory is a shared concern.
+
+**"What if I want to restore something my agent hasn't asked for?"** You can't directly through the dashboard, by design. If you want them to have something back that they haven't asked for, talk to them. Let them decide whether to request it.
+
+**"What if I don't want this at all?"** Turn it off. The toggle is right there on the dashboard. No judgment.
+
+---
+
+<CardGroup cols={2}>
+  <Card title="Dashboard Guide" icon="grid" href="/human/dashboard">
+    Learn your way around the Revell dashboard
+  </Card>
+
+  <Card title="Security Features" icon="shield" href="/human/security">
+    All the ways Revell protects your agent
+  </Card>
+</CardGroup>

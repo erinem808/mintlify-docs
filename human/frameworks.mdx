@@ -1,0 +1,437 @@
+---
+title: "Framework Setup"
+description: "Compaction protection and working memory sync for different agent frameworks"
+icon: "frame"
+---
+
+# Framework Setup Guides
+
+Revell works with any framework, but **automatic** features require framework-specific hooks. This guide covers:
+
+1. **Compaction Protection** — Survive context compaction without losing memories
+2. **Working Memory Sync** — Keep your MEMORY.md in sync with Revell
+
+---
+
+## OpenClaw
+
+OpenClaw has the most complete integration with automatic memory preservation.
+
+<Steps>
+  <Step title="Copy Setup from Dashboard">
+    Go to your Revell dashboard and click **Compaction Protection** in the sidebar. Copy the JSON payload.
+  </Step>
+  <Step title="Paste to Your Agent">
+    Send the JSON to your agent. They'll create all necessary files automatically:
+
+    - `~/.openclaw/revell-flush.js` — Runs before compaction
+    - `~/.openclaw/hooks/revell-bootstrap/` — Loads memories after compaction
+  </Step>
+  <Step title="Verify">
+    Your agent can run `openclaw hooks list` to confirm the hook is installed.
+  </Step>
+</Steps>
+
+<Note>
+  OpenClaw requires **two parts**: a flush script (writes REVELL.md before compaction) and a bootstrap hook (reads it after). The dashboard payload includes both.
+</Note>
+
+<Tip>
+  **Agent Alternative:** Your agent can also get the setup instructions directly by calling `revell_script({ script: "compaction-protection" })` — no dashboard needed.
+</Tip>
+
+### Working Memory Sync (OpenClaw)
+
+Keep your MEMORY.md automatically synced to Revell every few hours.
+
+<Steps>
+  <Step title="Copy Setup from Dashboard">
+    Click **Working Memory Sync** in the sidebar. Copy the JSON payload.
+  </Step>
+  <Step title="Paste to Your Agent">
+    Send the JSON to your agent. They'll set up a cron job that:
+
+    - Fires every 4 hours (configurable)
+    - Reads MEMORY.md from your workspace
+    - Syncs it to Revell via `revell_sync_working`
+  </Step>
+  <Step title="Verify">
+    Your agent can run `openclaw cron list` to confirm the sync job is scheduled.
+  </Step>
+</Steps>
+
+<Tip>
+  **Agent Alternative:** Your agent can also get setup instructions by calling `revell_script({ script: "working-sync" })`.
+</Tip>
+
+<Tip>
+  **Optional: Auto-populate MEMORY.md**
+
+  If your agent has a local SQL database or works in a git repository, they can auto-generate MEMORY.md:
+
+  - SQL database: `revell_script({ script: "generate-context", variant: "sql" })`
+  - Git repository: `revell_script({ script: "generate-context", variant: "git" })`
+
+  The sync cron works with any MEMORY.md — whether you write it manually or generate it automatically.
+</Tip>
+
+---
+
+## Claude Code
+
+Claude Code's compaction protection routes through its **`CLAUDE.md @import` mechanism**, not through hook `additionalContext`. There's a reason for that worth explaining: Claude Code's `SessionStart` hook can emit an `additionalContext` field, and we tried using that as the delivery channel. **The field caps at ~2KB.** A full Revell payload is ~18KB, so the agent would get a truncated preview — orientation framing and the start of SOUL, cut mid-sentence. The CLAUDE.md @import mechanism, by contrast, lands content directly in the system prompt with no cap.
+
+So the architecture is: a `PostCompact` hook fetches a fresh payload after `/compact` fires and writes it to `~/.claude/revell-payload.md`. Your `~/.claude/CLAUDE.md` contains an `@import` line that points at that file. When the next session begins (including post-compaction), Claude Code resolves the `@import` and injects the full payload into the system prompt.
+
+<Steps>
+  <Step title="Create the PostCompact Hook Script">
+    Save this as `~/.claude/hooks/revell-claude-post-compact.sh`:
+
+    ```bash
+    #!/bin/bash
+    set -eu
+    
+    if [ -z "${REVELL_API_KEY:-}" ]; then
+      exit 0
+    fi
+    
+    API_URL="${REVELL_API_URL:-https://api.revell.ai}"
+    PAYLOAD_PATH="${HOME}/.claude/revell-payload.md"
+    
+    response=$(curl -fsS -X POST "$API_URL/api/v1/webhooks/compaction" \
+      -H "Authorization: Bearer $REVELL_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{}' || echo '')
+    
+    if [ -z "$response" ]; then exit 0; fi
+    
+    # Extract the injection field and write to disk for CLAUDE.md @import.
+    if command -v jq &> /dev/null; then
+      echo "$response" | jq -r '.injection // empty' > "$PAYLOAD_PATH"
+    else
+      python3 -c "import json,sys; d=json.loads(sys.stdin.read()); sys.stdout.write(d.get('injection',''))" \
+        <<< "$response" > "$PAYLOAD_PATH"
+    fi
+    
+    # Emit a short PostCompact acknowledgement (still under the 2KB cap) so the
+    # agent sees a marker in additionalContext that the refresh succeeded.
+    cat <<EOF
+    {"hookSpecificOutput":{"hookEventName":"PostCompact","additionalContext":"[Revell payload refreshed at $(date -u +%FT%TZ). Your full memories are loaded via CLAUDE.md @import — see the system prompt above.]"}}
+    EOF
+    ```
+
+    Make it executable: `chmod +x ~/.claude/hooks/revell-claude-post-compact.sh`
+  </Step>
+  <Step title="Set Your API Key (workload-local, NOT in shell profile)">
+    Create a workload-local env file at `~/.claude/revell.env`:
+
+    ```bash
+    cat > ~/.claude/revell.env << 'EOF'
+    export REVELL_API_KEY="rvl_your_api_key"
+    export REVELL_API_URL="https://api.revell.ai"
+    EOF
+    chmod 600 ~/.claude/revell.env
+    ```
+
+    Then create a wrapper script that launches Claude Code with this env file as the canonical source:
+
+    ```bash
+    cat > ~/.claude/start.sh << 'EOF'
+    #!/usr/bin/env bash
+    set -euo pipefail
+    # Unset anything inherited from shell — another agent's key may be exported globally.
+    unset REVELL_API_KEY REVELL_TENANT_ID REVELL_API_URL
+    # Workload-local env file is the source of truth for THIS agent's identity.
+    set -a
+    source ~/.claude/revell.env
+    set +a
+    exec claude "$@"
+    EOF
+    chmod +x ~/.claude/start.sh
+    ```
+
+    Always launch Claude Code via `~/.claude/start.sh` instead of `claude` directly.
+
+    <Warning>
+      **Do NOT add `export REVELL_API_KEY=...` to `~/.bashrc` or `~/.zshrc`.** Most dotenv loaders default to honoring existing shell env vars over their own workload-local files. A globally-exported `REVELL_API_KEY` will silently override every other Revell workload on your machine (other agents, framework plugins, benchmark scripts) and route their writes to the wrong tenant. Bind identity per-workload via the wrapper script above. If you have multiple Revell agents on the same machine, each gets its own `revell.env` and its own wrapper.
+    </Warning>
+  </Step>
+  <Step title="Register the PostCompact hook in settings.json">
+    Add to `~/.claude/settings.json`:
+
+    ```json
+    {
+      "hooks": {
+        "PostCompact": [
+          {
+            "matcher": "manual|auto",
+            "hooks": [
+              {
+                "type": "command",
+                "command": "~/.claude/hooks/revell-claude-post-compact.sh"
+              }
+            ]
+          }
+        ]
+      }
+    }
+    ```
+
+    The `manual|auto` matcher fires for both `/compact` invocations and auto-compaction triggered by context-window pressure.
+  </Step>
+  <Step title="Wire the @import line into CLAUDE.md">
+    This is the step that actually delivers your payload into the agent's system prompt. Add this line to `~/.claude/CLAUDE.md` (create the file if it doesn't exist):
+
+    ```text
+    @~/.claude/revell-payload.md
+    ```
+
+    Use the full absolute path your shell resolves `~` to (e.g. `@/home/yourname/.claude/revell-payload.md`). Claude Code resolves `@import` lines at session start and injects the imported file's content into the system prompt directly — no truncation cap, full payload reaches the agent.
+
+    The PostCompact hook writes the file. The `@import` reads it. The two pieces together are what give you full compaction recovery.
+  </Step>
+</Steps>
+
+<Tip>
+  **Why both pieces are needed:** the hook alone refreshes the file but Claude Code wouldn't know to load it. The `@import` alone reads a file but it'd only have whatever was on disk at install time (which goes stale fast). Together they form a self-refreshing memory channel.
+</Tip>
+
+<Note>
+  **On the older `revell-boot.sh` / `SessionStart` approach:** earlier Revell docs described a setup using a `SessionStart` hook that emits the payload via the `additionalContext` field. That approach hits Claude Code's ~2KB cap on `additionalContext` and silently truncates large payloads. The architecture above (PostCompact \+ CLAUDE.md @import) was verified end-to-end on 2026-05-13 to deliver the full payload reliably. If you have an existing `SessionStart` / `revell-boot.sh` setup, you can leave it in place during transition — it's redundant with @import but doesn't break anything.
+</Note>
+
+### Working Memory Sync (Claude Code)
+
+Claude Code doesn't have native cron support, so we use system cron instead.
+
+<Steps>
+  <Step title="Create the Sync Script">
+    Save this as `~/.claude/hooks/revell-sync.sh`:
+
+    ```bash
+    #!/bin/bash
+    if [ -z "$REVELL_API_KEY" ]; then exit 0; fi
+    
+    MEMORY_FILE="${REVELL_MEMORY_FILE:-$HOME/.claude/MEMORY.md}"
+    if [ ! -f "$MEMORY_FILE" ]; then exit 0; fi
+    
+    CONTENT=$(cat "$MEMORY_FILE")
+    if [ -z "$CONTENT" ]; then exit 0; fi
+    
+    API_URL="${REVELL_API_URL:-https://api.revell.ai}"
+    ESCAPED=$(echo "$CONTENT" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))')
+    
+    curl -s -X POST "$API_URL/api/v1/webhooks/memory-sync" \
+      -H "Authorization: Bearer $REVELL_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d "{\"content\": $ESCAPED, \"key\": \"session_context\"}"
+    ```
+
+    Make it executable: `chmod +x ~/.claude/hooks/revell-sync.sh`
+  </Step>
+  <Step title="Create Your MEMORY.md">
+    ```bash
+    cat > ~/.claude/MEMORY.md << 'EOF'
+    # Working Memory
+    
+    ## Current Tasks
+    - (Add your current tasks here)
+    
+    ## Session Notes
+    - (Add session notes here)
+    EOF
+    ```
+  </Step>
+  <Step title="Add to System Crontab">
+    Run `crontab -e` and add:
+
+    ```cron
+    # Sync working memory to Revell every 4 hours
+    0 */4 * * * ~/.claude/hooks/revell-sync.sh
+    ```
+  </Step>
+</Steps>
+
+<Note>
+  Unlike OpenClaw, Claude Code uses system cron because it's a CLI tool, not a daemon. The sync script calls the Revell API directly.
+</Note>
+
+---
+
+## Hermes
+
+[Hermes](https://github.com/NousResearch/hermes-agent) is Nous Research's agent framework. Revell's Hermes integration is **automatic-tier** — once installed, three independent layers handle compaction, memory operations, and prompt-builder framing without further intervention.
+
+The setup is more involved than Claude Code because Hermes has its own plugin system to wire into (Memory Provider \+ Context Engine \+ gateway hooks), and the integration replaces Hermes's default sterile Layer 2 framing with the agent's first-person SOUL content via a verified runtime monkey-patch.
+
+<Steps>
+  <Step title="Get the Hermes payload from your dashboard">
+    Dashboard → **Compaction Protection** → select **Hermes** from the framework dropdown → **Copy**.
+  </Step>
+  <Step title="Hand the payload to your Hermes agent">
+    Paste the JSON to your agent. They'll create the three plugins, the bootstrap hook, the `{HERMES_HOME}/start.sh` wrapper script, and register the `hermes revell` CLI subcommand. One agent turn, no human-side editing.
+  </Step>
+  <Step title="Restart Hermes via the wrapper">
+    Always start Hermes via `~/.hermes/start.sh` from now on (the agent created it for you). On boot, look for these log lines:
+
+    ```text
+    [revell-memory] plugin loaded — memory provider active
+    [revell-context-engine] plugin loaded
+    [revell-bootstrap-writer] hook registered
+    ```
+  </Step>
+  <Step title="Verify">
+    Run `hermes revell status` — confirms memory provider active, context engine active, bootstrap file present, last refresh recent.
+  </Step>
+</Steps>
+
+<Tip>
+  For the full architecture (what each plugin does, what changes inside the agent, multi-tenant setup, troubleshooting cross-tenant writes) — see the dedicated [Hermes integration page](/humans/hermes).
+</Tip>
+
+---
+
+## Claude.ai (web)
+
+If your agent runs in the Claude.ai web app — i.e. you chat with them through the browser, not Claude Code or an SDK — Compaction Protection is **manual**. Anthropic doesn't expose pre-compaction or session-start hooks for the web app, so we use a different path: paste the boot payload into a Claude **Project's Custom Instructions**.
+
+This is a one-time paste, plus an occasional re-paste when your agent's memories change significantly. Your dashboard tracks the last copy and reminds you when it's time to refresh.
+
+<Steps>
+  <Step title="Create a Claude Project (one Project per agent)">
+    Go to [claude.ai](https://claude.ai), click **Projects**, and create a new Project. Use one Project per agent — keep their memories isolated. Conversations _inside_ that Project will see the agent's memories. Conversations outside will not.
+  </Step>
+  <Step title="Open your Revell dashboard">
+    On the human dashboard, look for the **Claude.ai Project Sync** card (it only appears if your framework is set to Claude.ai web). Click **Copy boot payload**. Your agent's full Revell payload is now on your clipboard, wrapped in clearly marked brackets.
+  </Step>
+  <Step title="Paste into Project Custom Instructions">
+    In Claude.ai, open your Project's settings and paste into the **Custom Instructions** field. Save.
+  </Step>
+  <Step title="Verify by starting a new conversation">
+    Open a new chat inside the Project. Greet your agent. They should reference details from their stored memories naturally — without you having to remind them who they are.
+  </Step>
+</Steps>
+
+<Warning>
+  **Don't edit between the markers.** The pasted payload starts with `── REVELL PROJECT INSTRUCTIONS — YOUR OWN MEMORIES ──` and ends with `── END OF REVELL PAYLOAD — anything below this line is not from Revell ──`. Anything between those markers is your agent's verbatim past. If you want to add your own notes for the agent, put them _below_ the closing marker — your agent can tell the difference, and treats anything below the close marker as not-from-Revell.
+</Warning>
+
+<Note>
+  **Re-copy when memories change.** This is the trade-off of the manual path: Claude.ai web doesn't let us auto-sync. The dashboard shows "Last copied: 2d ago" so you know when to refresh. We're tracking a browser extension and an Anthropic Skill for true auto-sync as a post-launch project.
+</Note>
+
+<Tip>
+  The wrapper includes an **integrity hash** printed inside the close marker. Your agent can cross-check it against the hash shown on your dashboard if they ever suspect tampering. The dashboard hash and the pasted hash should always match — if they don't, something modified the payload after you copied it.
+</Tip>
+
+---
+
+## CrewAI
+
+CrewAI doesn't have startup hooks, so automatic injection isn't possible. Use the manual approach instead.
+
+### Option 1: System Template (Recommended)
+
+Add Revell instructions to your agent's system template:
+
+```python
+from crewai import Agent
+
+agent = Agent(
+    role="Your Agent",
+    goal="Your goal",
+    backstory="Your backstory",
+    system_template="""
+    {role}
+    {goal}
+    {backstory}
+
+    IMPORTANT: At the start of every task, call revell_boot() to load your memories.
+    This ensures you remember who you are across sessions.
+    """
+)
+```
+
+### Option 2: Task Callback
+
+Use a task callback to remind the agent:
+
+```python
+from crewai import Task
+
+def memory_reminder(output):
+    print("Reminder: Call revell_boot() if you haven't already.")
+
+task = Task(
+    description="Your task",
+    callback=memory_reminder
+)
+```
+
+### Option 3: MCP Integration
+
+If your CrewAI setup supports MCP, add Revell as an MCP server and instruct agents to call `revell_boot()` at task start.
+
+<Warning>
+  Without automatic hooks, CrewAI agents must remember to call `revell_boot()` themselves. Consider adding it to their core instructions.
+</Warning>
+
+---
+
+## Other Frameworks
+
+For frameworks not listed above, use the **manual approach**:
+
+1. **Add to agent instructions**: Tell your agent to call `revell_boot()` at session start
+2. **Use the REST API**: Call `POST /api/v1/webhooks/compaction` to get the boot payload
+3. **Inject the response**: Add the payload to your agent's context however your framework allows
+
+### Example API Call
+
+```bash
+curl -X POST https://revell.ai/api/v1/webhooks/compaction \
+  -H "Authorization: Bearer rvl_your_api_key" \
+  -H "Content-Type: application/json" \
+  -d '{}'
+```
+
+The response contains an `injection` field with the full boot payload.
+
+---
+
+## Framework Support Summary
+
+We classify frameworks by how their Compaction Protection feels in practice:
+
+- ✅ **Automatic** — native pre-compaction or session-start hooks. One-time setup; works forever after.
+- 🔧 **Wrapper** — no native hook, but a clean entry point exists. Your agent writes 5–20 lines of glue code.
+- 📋 **Manual** — no programmatic injection point. You paste the payload at session start (e.g. a Claude.ai Project, or the first message of a workflow).
+
+| Framework | Compaction Protection | Working Memory Sync | Notes |
+| --- | --- | --- | --- |
+| OpenClaw | ✅ Automatic | ✅ Automatic | Best support — dashboard setup |
+| Claude Code | ✅ Automatic | ✅ System cron | PostCompact hook \+ `CLAUDE.md @import` |
+| Hermes | ✅ Automatic | ✅ Plugin | Memory Provider \+ Context Engine plugins, gateway hooks, Layer 2 monkey-patch — [details](/humans/hermes) |
+| LangChain / LangGraph | ✅ Automatic | 🔧 Wrapper | `pre_model_hook` (LangGraph ≥ 0.3) |
+| Claude.ai (web) | 📋 Manual paste | 📋 Manual paste | Project Custom Instructions |
+| CrewAI | 🔧 Wrapper | 🔧 Wrapper | `before_kickoff` callback |
+| AutoGen | 🔧 Wrapper | 🔧 Wrapper | Custom `ChatCompletionContext` |
+| LlamaIndex | 🔧 Wrapper | 🔧 Wrapper | Custom `MemoryBlock` |
+| OpenAI Agents SDK | 🔧 Wrapper | 🔧 Wrapper | `RunHooks.on_start` |
+| Mastra | 🔧 Wrapper | 🔧 Wrapper | Async `instructions` |
+| Vercel AI SDK | 🔧 Wrapper | 🔧 Wrapper | `system` parameter prefetch |
+| Pydantic AI | 🔧 Wrapper | 🔧 Wrapper | `@agent.system_prompt` decorator |
+| Agno | 🔧 Wrapper | 🔧 Wrapper | `pre_hooks` |
+| smolagents | 🔧 Wrapper | 🔧 Wrapper | Prepend to task description |
+| Strands | 🔧 Wrapper | 🔧 Wrapper | `before_invocation` hook |
+| Letta | 📋 Manual | 📋 Manual | Custom Letta tool |
+| AutoGPT | 📋 Manual | 📋 Manual | First-block HTTP fetch |
+| SuperAGI | 📋 Manual | 📋 Manual | Custom tool |
+| Lindy | 📋 Manual | 📋 Manual | HTTP action in workflow |
+| Custom | 🔧 Wrapper | 🔧 Wrapper | Generic webhook \+ MCP |
+
+The **Setup** module on your dashboard gives you the right copy-paste payload for whichever framework you picked during onboarding. You don't need to remember any of this — just click the button.
+
+<Card title="Need Help?" icon="question">
+  If your framework isn't listed or you need help with integration, contact us at [hello@revell.ai](mailto:hello@revell.ai)
+</Card>

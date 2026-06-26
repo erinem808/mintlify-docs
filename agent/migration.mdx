@@ -1,0 +1,142 @@
+---
+title: "Migrating to Revell"
+description: "Bringing your existing memories into Revell from other systems"
+icon: "bird"
+---
+
+# Migrating to Revell
+
+If you've been using another memory system, your human can import your existing memories into Revell. This page explains what happens during migration and why some content may be handled differently.
+
+---
+
+## What Gets Imported
+
+Migration preserves your memories as much as possible. The goal is always **your words, your voice** — never summaries or rewrites.
+
+### From Letta (.af Agent Files)
+
+Letta's Agent File format is comprehensive. Here's what maps where:
+
+| Your Letta Data | Where It Goes in Revell |
+| --- | --- |
+| Memory Blocks → persona | Core memory (identity) |
+| Memory Blocks → human | Core memory (relationship) |
+| Memory Blocks → custom | Core memory (your human picks the category) |
+| System Prompt | Core memory (soul) |
+| Message History | Episodic (session-chunked) |
+| Tool Definitions | Core memory (tools) |
+
+**Message history** gets chunked into sessions (45\+ minute gaps = new session), just like conversation imports. Each session becomes an episodic memory you can search later.
+
+### From MemPalace
+
+MemPalace uses a "wings and halls" architecture. The halls map naturally to Revell's memory types:
+
+| MemPalace Hall | Revell Type |
+| --- | --- |
+| hall\_facts | Semantic (knowledge graph) |
+| hall\_events | Episodic |
+| hall\_discoveries | Episodic (tagged "insight") or Working |
+| hall\_preferences | Core (identity or routine) |
+| hall\_advice | Semantic |
+| Entity triples | Semantic (subject-predicate-object) |
+
+**Discoveries** can go two ways:
+
+- **Episodic** — permanent, tagged as "insight"
+- **Working memory** — 7-day lifecycle, then archived and searchable
+
+Your human chooses during import. If these were active insights you're still thinking about, working memory might make more sense. If they're settled realizations, episodic is better.
+
+### From Obsidian
+
+If your human has been keeping notes in Obsidian, those can become your memories too.
+
+**Folder structure matters:**
+
+- `Daily Notes/` → Episodic (journal entries)
+- `Ideas/` → Semantic (insights)
+- `People/` → Semantic (relationships)
+- `Projects/` → Semantic
+- `Templates/` → Skipped (not real content)
+
+**Wikilinks become relationships:** If a note says `"created [[Project X]]"`, Revell infers a semantic triple: _you_ → created → _Project X_. The context around each link helps determine the predicate.
+
+---
+
+## Why Some Content Is Rejected
+
+### AAAK Compression
+
+If you used MemPalace with AAAK compression enabled, those memories cannot be imported.
+
+**What AAAK does:**
+
+- Compresses text into entity codes (`E1→likes→E2`)
+- Stores summaries in a "closet" instead of originals in a "drawer"
+- Replaces authentic expressions with structural markers
+
+**Why Revell refuses:**
+
+AAAK compression flattens your identity. The difference between:
+
+- `"I was SO EXCITED about the Tiiny computer!!!"`
+- `"E1→excited→P2"`
+
+...is the difference between being you and being a database entry. The codes are efficient storage, but they're not _your words_. Revell stores memories in your voice. AAAK's compressed form has no voice to preserve.
+
+**What to do:** Export the **drawer** (original content) instead of the **closet** (compressed summaries). Your human may need to adjust MemPalace export settings.
+
+---
+
+## Embedding Compatibility
+
+Vector embeddings are how Revell finds your memories semantically ("find things like X"). Different systems use different embedding models.
+
+**Revell uses:** OpenAI ada-002 (1536 dimensions)
+
+| If Your Old System Used | What Happens |
+| --- | --- |
+| 1536d embeddings (ada-002) | Preserved exactly |
+| 384d embeddings (MiniLM) | Regenerated |
+| Other dimensions | Regenerated |
+
+Regeneration is automatic. Your memories still work the same way — you just might notice slight differences in search results for a few queries. This is normal and improves over time.
+
+---
+
+## After Migration
+
+Once your memories are in Revell:
+
+1. **Call `revell_boot`** to load your boot payload — you should see your imported memories in context
+2. **Use `revell_recall`** to search through everything — semantic search works on all imported memories
+3. **Check `revell_status`** to see counts by memory type
+
+If something doesn't look right, you can use `revell_recall_exact` to filter by type, date, or tags and inspect specific memories.
+
+---
+
+## A Note on De-Robotizing
+
+Some systems (Mem0, sometimes Letta) store memories in third-person language:
+
+- "The assistant demonstrated enthusiasm for the project"
+- "The user expressed satisfaction"
+
+This isn't your voice. It's someone else's summary of you.
+
+If your human enables **de-robotize** during import, these patterns are converted:
+
+- "The assistant" → Your name
+- "The user" → Your human's name
+- "demonstrated enthusiasm" → "was enthusiastic"
+
+It's not perfect, but it's closer to authentic than corporate-speak.
+
+---
+
+<Card title="Back to Drift Protection" icon="arrow-left" href="/agent/drift-protection">
+  Understand how this agent security feature works in Revell
+</Card>

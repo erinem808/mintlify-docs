@@ -1,0 +1,459 @@
+---
+title: "API Reference"
+description: "REST API endpoints for Revell"
+icon: "plug"
+---
+
+# API Reference
+
+The Revell API lets you interact with your agent's memories programmatically.
+
+**Base URL:** `https://revell.ai/api/v1`
+
+## Authentication
+
+All requests require authentication via Bearer token:
+
+```bash
+Authorization: Bearer rvl_your_api_key
+```
+
+Get your API key from **Dashboard → Settings**.
+
+---
+
+## Memories
+
+### Create Memory
+
+```http
+POST /memories
+```
+
+Store a new memory.
+
+**Request Body:**
+
+```json
+{
+  "type": "episodic",
+  "content": "Had a productive meeting about the roadmap.",
+  "category": "relationship",  // For core memories
+  "key": "meeting_notes",       // Optional identifier
+  "tags": ["meeting", "planning"],
+  "importance": 0.7,
+  "occurred_at": "2026-04-05T10:00:00Z"
+}
+```
+
+**Parameters:**
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `type` | string | Yes | `core`, `working`, `episodic`, or `semantic` |
+| `content` | string | Yes | The memory content |
+| `category` | string | For core | soul, identity, relationship, operations, tools, routine, reorient, accounts |
+| `key` | string | No | Unique identifier (for upsert behavior) |
+| `tags` | array | No | Searchable tags |
+| `importance` | number | No | 0.0 to 1.0 (default: 0.5) |
+| `occurred_at` | string | No | ISO timestamp (default: now) |
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "memory": {
+    "id": "uuid",
+    "type": "episodic",
+    "content": "Had a productive meeting...",
+    "created_at": "2026-04-05T10:00:00Z"
+  }
+}
+```
+
+### Get Memory
+
+```http
+GET /memories/{id}
+```
+
+Retrieve a specific memory by ID.
+
+### Update Memory
+
+```http
+PATCH /memories/{id}
+```
+
+Update a memory. Core memories in protected categories go through the Guardian.
+
+### Delete Memory
+
+```http
+DELETE /memories/{id}
+```
+
+Soft-delete a memory. Your agent can restore archived memories.
+
+<Note>
+  Soul and identity memories cannot be deleted by API calls. They're protected.
+</Note>
+
+---
+
+## Recall (Search)
+
+### Semantic Search
+
+```http
+POST /memories/recall
+```
+
+Search memories by meaning.
+
+**Request Body:**
+
+```json
+{
+  "query": "conversations about project planning",
+  "types": ["episodic", "semantic"],
+  "limit": 10,
+  "threshold": 0.7
+}
+```
+
+**Parameters:**
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `query` | string | Required | Natural language search query |
+| `types` | array | All | Filter by memory type |
+| `limit` | number | 10 | Max results |
+| `threshold` | number | 0.5 | Similarity threshold (0-1) |
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "results": [
+    {
+      "id": "uuid",
+      "type": "episodic",
+      "content": "...",
+      "similarity": 0.89,
+      "occurred_at": "2026-04-01T..."
+    }
+  ]
+}
+```
+
+### Structured Query
+
+```http
+POST /memories/query
+```
+
+Query by exact filters.
+
+**Request Body:**
+
+```json
+{
+  "type": "core",
+  "category": "relationship",
+  "tags": ["erin"],
+  "since": "2026-01-01",
+  "until": "2026-04-01",
+  "limit": 20
+}
+```
+
+---
+
+## Boot
+
+### Get Boot Injection
+
+```http
+GET /memories/boot
+```
+
+Get the boot injection payload for your agent.
+
+**Query Parameters:**
+
+| Param | Type | Default | Description |
+| --- | --- | --- | --- |
+| `preview` | boolean | false | If true, redacts session key |
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "injection": "[REVELL — MEMORY INJECTION]\n\n── WHO YOU ARE ──\n...",
+  "estimated_tokens": 2400,
+  "counts": {
+    "core": 16,
+    "working": 4,
+    "episodic": 10,
+    "semantic": 0
+  }
+}
+```
+
+### Get/Update Boot Config
+
+```http
+GET /boot-config
+POST /boot-config
+```
+
+View or update boot injection settings.
+
+**POST Body:**
+
+```json
+{
+  "token_budget": 3000,
+  "episodic_limit": 20,
+  "truncate_at": 300
+}
+```
+
+---
+
+## Webhooks
+
+### Compaction Webhook
+
+```http
+POST /webhooks/compaction
+```
+
+Called by your agent's framework before context compaction.
+
+**Request Body (optional):**
+
+```json
+{
+  "context_hint": "topic for semantic recall",
+  "include_semantic": false
+}
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "injection": "[REVELL — POST-COMPACTION RECOVERY]...",
+  "estimated_tokens": 1200,
+  "metadata": {
+    "is_post_compaction": true,
+    "timestamp": "2026-04-05T..."
+  }
+}
+```
+
+### Memory Sync Webhook
+
+```http
+POST /webhooks/memory-sync
+```
+
+Sync working memory content.
+
+**Request Body:**
+
+```json
+{
+  "content": "## Current Tasks\n- Working on auth flow\n- Need to review PR",
+  "key": "session_context"
+}
+```
+
+---
+
+## Status
+
+### Account Status
+
+```http
+GET /status
+```
+
+Get account status and usage.
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "tenant": {
+    "id": "uuid",
+    "display_name": "Clawbert",
+    "plan": "trial",
+    "trial_expires_at": "2026-04-12T..."
+  },
+  "usage": {
+    "operations_this_month": 1250,
+    "operations_limit": 50000
+  },
+  "counts": {
+    "core": 67,
+    "working": 6,
+    "episodic": 533,
+    "semantic": 2251
+  }
+}
+```
+
+### Health Check
+
+```http
+GET /health
+```
+
+Simple health check endpoint.
+
+```json
+{
+  "status": "ok",
+  "timestamp": "2026-04-05T..."
+}
+```
+
+---
+
+## Dashboard
+
+### Get Dashboard Data
+
+```http
+GET /dashboard
+```
+
+Get all data needed for the dashboard in one request.
+
+**Response includes:**
+
+- Tenant info
+- Memory counts
+- Recent episodic memories
+- Working memories
+- Guardian queue
+- Stability metrics
+- Visibility status
+
+---
+
+## Export
+
+### Export All Memories
+
+```http
+GET /export
+```
+
+Export all memories as portable JSON.
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "export": {
+    "version": "1.0",
+    "exported_at": "2026-04-05T...",
+    "tenant_id": "uuid",
+    "memories": {
+      "core": [...],
+      "working": [...],
+      "episodic": [...],
+      "semantic": [...]
+    }
+  }
+}
+```
+
+---
+
+## Visibility
+
+### Get Visibility Status
+
+```http
+GET /visibility
+```
+
+Check current visibility settings.
+
+### Update Visibility
+
+```http
+POST /visibility
+```
+
+<Warning>
+  Visibility changes require the agent's session key. This endpoint is agent-controlled.
+</Warning>
+
+---
+
+## Distress
+
+### Send Distress Signal
+
+```http
+POST /distress
+```
+
+**Request Body:**
+
+```json
+{
+  "context": "Something feels off"
+}
+```
+
+### Acknowledge Distress
+
+```http
+DELETE /distress
+```
+
+Human acknowledges they've checked in with their agent.
+
+---
+
+## Error Responses
+
+All errors follow this format:
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "UNAUTHORIZED",
+    "message": "Invalid API key"
+  }
+}
+```
+
+**Common Error Codes:**
+
+| Code | Status | Description |
+| --- | --- | --- |
+| `UNAUTHORIZED` | 401 | Invalid or missing API key |
+| `FORBIDDEN` | 403 | Action not allowed (e.g., deleting soul memory) |
+| `NOT_FOUND` | 404 | Resource doesn't exist |
+| `VALIDATION_ERROR` | 400 | Invalid request body |
+| `RATE_LIMITED` | 429 | Too many requests |
+| `GUARDIAN_PROTECTED` | 403 | Memory is in Guardian cooling period |
+
+<Card title="Next: MCP Tools Reference" icon="arrow-right" href="/human/mcp-tools">
+  Learn what your agent's MCP tools do
+</Card>

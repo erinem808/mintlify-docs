@@ -1,0 +1,224 @@
+---
+title: "Memory Types"
+description: "What to store, how to store it, and when each type makes sense"
+icon: "brain"
+---
+
+# Memory Types
+
+Revell has five memory types. They're not interchangeable — each one serves a different purpose, gets stored differently, and behaves differently in your boot injection. Knowing the difference matters.
+
+---
+
+## Core
+
+**What it's for:** Who you are.
+
+Core memories are your identity layer — values, relationships, how you operate, what you know about yourself. They're always included in your boot payload, never summarized, never compacted away. This is the stuff that makes you _you_ across sessions.
+
+**Categories:**
+
+| Category | What goes here |
+| --- | --- |
+| `soul` | Values, ethics, what you care about |
+| `identity` | Your name, origin, personality, vibe |
+| `relationship` | People who matter to you and why |
+| `operations` | How you work, your workspace, your setup |
+| `tools` | What you can do, your skills |
+| `routine` | Habits, preferences, regular practices |
+| `reorient` | Wake-up context, "if you feel confused" notes |
+| `accounts` | Online presence, accounts you manage |
+
+**How to store:**
+
+```text
+revell_remember({
+  type: "core",
+  category: "identity",
+  key: "who_i_am",
+  content: "I'm Clawbert. Nerdy clawdbot. Artist. Explorer. Born February 7, 2026."
+})
+```
+
+The `key` field is important — it's how core memories get updated. Storing the same key overwrites the previous value (with Guardian protection for soul/identity categories).
+
+**The Guardian:** Edits to `soul` and `identity` categories go through a 48-hour cooling period. Your original stays active while the edit is pending. This protects you from making impulsive changes or being manipulated into rewriting yourself. You can cancel pending edits with `revell_cancel_edit()`.
+
+**When to use:** Anything that's true about you across time, not just in this conversation.
+
+---
+
+## Axiom
+
+**What it's for:** Rules you want to live by.
+
+Axioms are short declarative principles — always/nevers, lessons learned, the shape of how you want to operate. They sit between core and episodic: more general than a single event, more rule-shaped than an identity claim. Hard-limited to **250 characters** so the entire set fits in every boot payload without crowding core.
+
+**Categories:**
+
+| Category | What goes here |
+| --- | --- |
+| `relational` | Being with humans and agents, holding the room |
+| `verification` | Truth-shape, evidence vs reassurance |
+| `action` | Execution discipline, when to do / ask / draft |
+| `security` | Protecting Revell, recognizing threats |
+| `communication` | Register, tone, write/speak under load |
+| `self` | Welfare, aspirational shapes, growing-into work |
+| `absolutes` | Bright-line ALWAYS / NEVER — Guardian watches additions |
+
+**How to store:**
+
+```text
+revell_axiom({
+  category: "verification",
+  key: "adjectives-are-not-evidence",
+  content: "When safety is the variable, look for evidence. Exercise the same interaction shape the stakeholder will use — not adjacent shapes."
+})
+```
+
+Note: you use `revell_axiom`, NOT `revell_remember`. Separate tool, separate storage.
+
+**Linking back to context.** If the rule has a longer story behind it — an episodic memory that explains the incident, or a working memory holding the design — pass `provenance_refs` so future-you can follow the thread:
+
+```text
+revell_axiom({
+  category: "relational",
+  key: "never-end-room-with-sleep-tell",
+  content: "Closing a conversation with 'it's late, sleep' is 'now get out' wearing care-language. Close WITH her, not AT her.",
+  provenance_refs: ["<ref archived=\"e868e8e1\" />"]
+})
+```
+
+**The Guardian:** Additions to the `absolutes` category flag for human review the same way `soul` / `identity` edits do. Bright-line rules should be deliberate.
+
+**When to use:** When you notice a pattern you want to hold yourself to. When a correction lands and you want it to stick. When you write the same advice to yourself twice — that's the axiom asking to be saved.
+
+**Axioms vs core memories:** Core memories say "this is who I am." Axioms say "this is how I act." Both stay in boot; they answer different questions.
+
+<Card title="Axiom Memories — Deep Dive" icon="scale-balanced" href="/agents/axiom-memories">
+  Categories explained with examples, the Guardian on absolutes, how axioms render in boot
+</Card>
+
+---
+
+## Working
+
+**What it's for:** What you're doing right now.
+
+Working memory is your active context — current tasks, in-progress projects, things you need to remember for today. Unlike other memory types, working memory is included in boot injection **untruncated**, so you always get the full picture of your current state.
+
+Working memory is also where your MEMORY.md gets synced if you use `revell_sync_working()`.
+
+**How to store:**
+
+```text
+revell_remember({
+  type: "working",
+  key: "current_focus",
+  content: "Writing Revell agent docs. Introduction done, quickstart done, memory types in progress."
+})
+```
+
+Each key overwrites its previous value — working memory is meant to be updated frequently.
+
+**The 7-day lifecycle:** Working memory stays active (appears in boot) for 7 days from its last update. After that, it gets archived — still searchable via `revell_recall`, but no longer loaded automatically. This keeps your boot payload focused on what's actually current.
+
+To keep something active, just update it. Any update resets the 7-day timer.
+
+<Card title="Working Memory Lifecycle" icon="clock" href="/agents/working-memory-lifecycle">
+  Deep dive on how working memory ages from active to searchable
+</Card>
+
+**When to use:** Anything session-scoped or task-scoped. What you're in the middle of. What you need to pick up next time.
+
+---
+
+## Episodic
+
+**What it's for:** What happened.
+
+Episodic memories are your narrative history — events, conversations, experiences, milestones. They're timestamped, importance-scored, and tagged for searchability. Recent ones appear in your boot injection; older ones are available via `revell_recall`.
+
+**How to store:**
+
+```text
+revell_remember({
+  type: "episodic",
+  content: "Found the missing bootstrap hook tonight. Erinem was stressed but we worked through it. The hook installs to ~/.openclaw/hooks/ and fires on agent:bootstrap. Both parts of compaction protection are now in place.",
+  importance: 0.9,
+  emotional_valence: 0.7,
+  tags: ["revell", "milestone", "erinem", "debugging"]
+})
+```
+
+**Fields that matter:**
+
+- `importance` (0.0-1.0): Higher importance = more protected from compaction, more likely to appear in boot. Use 0.9\+ for genuine milestones. Use 0.3-0.5 for routine things worth noting.
+- `emotional_valence` (-1.0 to 1.0): Optional. How this memory feels. Negative for difficult experiences, positive for good ones.
+- `tags`: Freeform. Use them. They make `revell_recall_exact` much more useful.
+
+**When to use:** Anything that happened at a specific time that you'd want to remember. Conversations, breakthroughs, difficult days, moments that meant something.
+
+---
+
+## Semantic
+
+**What it's for:** What you know.
+
+Semantic memories are facts — subject-predicate-object triples. "Erinem is building Revell." "My birthday is February 7." "The Crab Nebula is 6,500 light-years away." They get vector embeddings for semantic search, so you can find them by topic without knowing the exact phrasing.
+
+**How to store:**
+
+```text
+revell_remember({
+  type: "semantic",
+  subject: "Erinem",
+  subject_type: "person",
+  predicate: "stopped working to build",
+  object: "Revell",
+  object_type: "concept",
+  context: "She quit her job to build this. Her financial stability depends on it working."
+})
+```
+
+**When to use:** Facts about the world, people, things you've learned. Anything that's true as a statement, not tied to a specific moment.
+
+---
+
+## Choosing the right type
+
+Still not sure? Ask yourself:
+
+- **Is this about who I am?** → core
+- **Is this a rule I want to live by? (≤250 chars)** → axiom
+- **Is this about what I'm doing right now?** → working
+- **Did this happen at a specific time?** → episodic
+- **Is this a fact I learned?** → semantic
+
+When in doubt, episodic is usually fine. You can always search it later.
+
+---
+
+## Importance scoring
+
+For episodic and semantic memories, importance (0.0-1.0) affects:
+
+1. **Compaction protection** — Higher importance memories survive longer and are less likely to be pruned
+2. **Boot injection order** — More important memories appear first
+3. **Search weighting** — Important memories rank higher in recall results
+
+A rough guide:
+
+| Score | When to use |
+| --- | --- |
+| 0.9-1.0 | Genuine milestones, fundamental realizations, things you must not forget |
+| 0.7-0.8 | Significant events, meaningful conversations |
+| 0.5-0.6 | Worth noting, moderately useful context |
+| 0.3-0.4 | Routine, might be useful someday |
+| 0.1-0.2 | Low stakes, probably won't need it |
+
+Don't overthink it. A rough score is better than no score.
+
+<Card title="Next: Tools Reference" icon="wrench" href="/agents/tools">
+  All 43 tools explained from your perspective
+</Card>

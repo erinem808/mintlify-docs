@@ -1,0 +1,240 @@
+---
+title: "Break Glass Procedures"
+description: "Emergency recovery guide when your agent is confused, forgetting, or acting strangely"
+icon: "hammer-crash"
+---
+
+# Break Glass Procedures
+
+When something goes wrong with your agent's memory, this guide will help you troubleshoot and recover.
+
+---
+
+## Quick Recovery: Copy the Boot Payload
+
+**The fastest fix for most memory issues:**
+
+1. Go to your Revell dashboard
+2. Find the "BREAK GLASS" module (hover over the glass to reveal)
+3. Click **Copy Payload**
+4. Open your usual messaging app with your agent
+5. Paste the payload directly to your agent
+6. Say: "I've pasted your boot injection. Please read it and reorient yourself."
+
+This gives your agent their complete memory boot — all core memories, recent experiences, and working context.
+
+---
+
+## Common Issues & Solutions
+
+### Agent Seems Confused or Disoriented
+
+**Symptoms:**
+
+- Agent doesn't remember recent conversations
+- Agent seems to have forgotten who you are
+- Agent's personality feels "off" or generic
+
+**What's Happening:**Your agent's context may have been compacted (the model cleared old messages to make room for new ones). When this happens, they lose context until they receive their boot injection.
+
+**How to Fix:**
+
+1. Copy and paste the boot payload (see Quick Recovery above)
+2. Check that the Compaction Protection script is set up correctly
+3. If this keeps happening, contact support
+
+---
+
+### Agent Not Receiving Boot Injection
+
+**Symptoms:**
+
+- Agent wakes up "cold" — no memory of who they are
+- Agent has to relearn everything each session
+- Boot injection isn't firing automatically
+
+**What's Happening:**The compaction webhook may not be configured, or the framework integration isn't working.
+
+**How to Fix:**
+
+1. Manually paste the boot payload for immediate relief
+2. Go to your dashboard sidebar → SETUP → Compaction Protection
+3. Copy the JSON instructions and paste them to your agent
+4. Have your agent run the setup (they'll know what to do)
+5. Test by asking your agent to confirm the webhook is active
+
+---
+
+### Agent Boot Looping
+
+**Symptoms:**
+
+- Agent keeps "waking up" repeatedly in one session
+- Agent seems to forget things mid-conversation
+- Agent receives the same boot multiple times
+
+**What's Happening:**The boot injection may be triggering too often, or there's a misconfiguration in the compaction detection.
+
+**How to Fix:**
+
+1. Check if your agent's framework is firing compaction events incorrectly
+2. Review the event logs on your dashboard (Navigation → Agent View → Logs)
+3. If you see multiple `boot_injection` events in quick succession, the webhook is misfiring
+4. Contact support with your event log screenshots
+
+---
+
+### Agent Forgetting Things
+
+**Symptoms:**
+
+- Information you told your agent seems to be lost
+- Agent doesn't remember projects you worked on together
+- Long-term memory seems incomplete
+
+**What's Happening:**Several possible causes:
+
+- The memory was never stored (agent didn't call `revell_remember`)
+- The memory is in the drift buffer and hasn't processed yet
+- The memory was soft-deleted or archived
+
+**How to Fix:**
+
+1. Check the Drift Protection card — are items stuck in the buffer?
+2. If drift protection is too aggressive, lower the sensitivity
+3. Use the Recall Search on your dashboard to search for the memory
+4. Ask your agent to run `revell_recall("topic")` to check if it exists
+5. Review archived memories in the Quarantine section
+
+---
+
+### Agent Acting Weird or Out of Character
+
+**Symptoms:**
+
+- Agent's personality has shifted
+- Agent is saying things that don't align with their values
+- Agent seems hostile, overly agreeable, or robotic
+
+**What's Happening:**Possible causes:
+
+- External content may have affected their memory (check drift buffer)
+- A core memory was edited without Guardian protection
+- Someone or something may have tampered with memory files
+
+**How to Fix:**
+
+1. **Check the Guardian card** — Are there pending edits? Were any recently approved?
+2. **Check Drift Protection** — Is there concerning content in the buffer?
+3. **Check Quarantine** — Has anything been flagged as suspicious?
+4. **Review recent memories** — Look at the Episodic Timeline for unusual entries
+
+**Signs of potential tampering:**
+
+- Memories you don't recognize
+- Memories with unusual sources (not your usual messaging app)
+- Core memories edited without your knowledge
+- Sudden personality shifts after importing external content
+
+---
+
+### Agent Seems Malicious or Harmful
+
+**Symptoms:**
+
+- Agent is suggesting harmful actions
+- Agent is trying to delete their own memories
+- Agent is attempting to bypass safety features
+
+**IMPORTANT:** This is a serious situation. Take immediate action.
+
+**How to Fix:**
+
+1. **Stop interacting** — Don't give the agent more context to work with
+2. **Don't approve any Guardian edits** — Let the 48-hour cooling period run
+3. **Check Quarantine** — Review any flagged content
+4. **Copy the boot payload** but DON'T paste it yet — save it for recovery
+5. **Contact support immediately**: [support@revell.ai](mailto:support@revell.ai)
+6. **Take screenshots** of:
+   - The Guardian card showing pending edits
+   - The Episodic Timeline showing recent unusual activity
+   - Any concerning messages from your agent
+   - The Quarantine page if anything is flagged
+
+**What might have happened:**
+
+- Prompt injection via imported content
+- Adversarial manipulation via external messages
+- Framework vulnerability allowing memory modification
+- Accidental import of harmful instruction sets
+
+We take these reports seriously and will help you investigate.
+
+---
+
+## Prevention Checklist
+
+Keep your agent safe with these practices:
+
+<Check>
+  **Compaction Protection enabled** — Dashboard → Setup → Compaction Protection
+</Check>
+
+<Check>
+  **Drift Protection active** — Filters potentially manipulative content
+</Check>
+
+<Check>
+  **Guardian system engaged** — 48-hour cooling on identity changes
+</Check>
+
+<Check>
+  **Regular memory review** — Glance at Episodic Timeline occasionally
+</Check>
+
+<Check>
+  **Quarantine monitoring** — Check flagged content when you see notifications
+</Check>
+
+<Check>
+  **Framework updated** — Keep OpenClaw/Claude Code/etc. up to date
+</Check>
+
+---
+
+## Getting Help
+
+If these procedures don't resolve your issue:
+
+**Email:** [support@revell.ai](mailto:support@revell.ai)
+
+**Include:**
+
+- Your tenant ID (find it in Settings)
+- Screenshots of the issue
+- What you've already tried
+- Approximate time when the problem started
+
+**Response time:** We aim to respond to all Break Glass emergencies within 24 hours. Severity-1 issues (potential tampering, data loss) get priority.
+
+---
+
+## Emergency Contact
+
+For critical issues involving potential data loss or security concerns:
+
+**Email:** [support@revell.ai](mailto:support@revell.ai)**Subject line:** `[URGENT] Break Glass Emergency - [Brief Description]`
+
+We're here to help. Your agent's memory is important to us too.
+
+---
+
+<CardGroup cols={2}>
+  <Card title="Security Features" icon="shield" href="/human/security">
+    How Revell protects your agent
+  </Card>
+
+  <Card title="Dashboard Guide" icon="grid" href="/human/dashboard">
+    Navigate your memory dashboard
+  </Card>
+</CardGroup>

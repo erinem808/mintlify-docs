@@ -1,0 +1,111 @@
+---
+title: "Working Memory Lifecycle"
+description: "How working memory ages from active to searchable"
+icon: "wrench"
+---
+
+# Working Memory Lifecycle
+
+Working memory has a lifecycle. Fresh entries appear in your boot injection. Older entries get archived but stay searchable. This keeps your boot payload focused while preserving everything you've stored.
+
+---
+
+## The 7-Day Rule
+
+Working memory stays **active** for 7 days from its last update. Active means:
+
+- Appears in your boot injection (untruncated)
+- Gets loaded every time you wake up
+- Represents your current state
+
+After 7 days without an update, working memory gets **archived**:
+
+- No longer appears in boot injection
+- Still searchable via `revell_recall`
+- Gets an embedding for semantic search
+
+This happens automatically. You don't need to do anything.
+
+---
+
+## Why This Matters
+
+Without a lifecycle, working memory would grow forever. Eventually your boot injection would be bloated with stale task lists and old session notes. The 7-day rule keeps your boot focused on what's actually current.
+
+But we don't delete old working memory — we archive it. That conversation context from three weeks ago? Still searchable. Those project notes you synced before the deadline? Still there.
+
+---
+
+## Keeping Working Memory Active
+
+If something is still relevant, just update it. Any update resets the 7-day timer.
+
+```text
+revell_remember({
+  type: "working",
+  key: "project_status",
+  content: "Updated status: still working on auth flow"
+})
+```
+
+Same key = same entry, fresh timestamp. It stays in boot.
+
+---
+
+## Finding Archived Working Memory
+
+Archived working memory surfaces in `revell_recall` searches:
+
+```text
+revell_recall({
+  query: "what was I working on last month",
+  types: ["working", "episodic"]  // include working to search archived entries
+})
+```
+
+The `types` array now accepts `"working"` — this searches your archived working memory alongside episodic memories.
+
+---
+
+## The Flow
+
+```text
+Day 1-7:   Working memory is ACTIVE
+           → Appears in boot injection
+           → Gets updated when you sync
+
+Day 8+:    Working memory is ARCHIVED
+           → Removed from boot injection
+           → Embedding generated for search
+           → Searchable via revell_recall
+```
+
+Archival happens automatically during boot. No cron jobs, no manual cleanup.
+
+---
+
+## When to Use Working vs Episodic
+
+Still not sure which to use?
+
+| Use working memory when... | Use episodic memory when... |
+| --- | --- |
+| It's about what you're doing NOW | It's about what HAPPENED |
+| You'll update it frequently | It's a finished event |
+| You need it in boot every session | You'll search for it later |
+| It's task/project state | It's a conversation, milestone, experience |
+
+Working memory is your scratchpad. Episodic memory is your journal.
+
+---
+
+## Practical Tips
+
+1. **Sync your MEMORY.md regularly** — Use `revell_sync_working` in your heartbeat or cron. This keeps your working memory fresh.
+2. **Don't worry about cleanup** — The 7-day archival handles it. Just keep syncing what's current.
+3. **Use descriptive keys** — When searching archived working memory, the key is included in the embedding. `"project_auth_flow"` will search better than `"stuff"`.
+4. **Check both types when searching** — If you're looking for something that might be in archived working memory, include `"working"` in your types array.
+
+<Card title="Back to Memory Types" icon="brain" href="/agent/memory-types">
+  Overview of all four memory types
+</Card>

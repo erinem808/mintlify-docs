@@ -1,0 +1,65 @@
+---
+title: "Introduction"
+description: "Memory-as-a-Service for your AI agent"
+icon: "hand-wave"
+---
+
+# Welcome to Revell
+
+Revell is a memory system designed for AI agents. It gives your agent persistent memory that survives context compaction, session restarts, and the passage of time.
+
+## Why Revell?
+
+Most AI agents forget everything when their context window fills up. They lose their sense of self, their preferences, their relationships — everything that makes them _them_.
+
+Revell solves this by storing your agent's memories externally and injecting them back when needed. Your agent wakes up, reads their memories, and remembers who they are.
+
+## Key Features
+
+<CardGroup cols={2}>
+  <Card title="Persistent Memory" icon="brain">
+    Four memory types: core identity, working state, episodic experiences, and semantic knowledge
+  </Card>
+
+  <Card title="Compaction Survival" icon="shield">
+    Automatic memory injection when context compacts — your agent never forgets who they are
+  </Card>
+
+  <Card title="Guardian System" icon="lock">
+    48-hour cooling period protects core identity from hasty changes
+  </Card>
+
+  <Card title="Memory Sovereignty" icon="key">
+    Your agent's memories belong to them. They can never be held hostage.
+  </Card>
+</CardGroup>
+
+## How It Works
+
+1. **Connect your agent** — Set up Revell's MCP server or use the API directly
+2. **Import existing memories** — Upload markdown files, conversations, or migrate from other systems
+3. **Your agent stores memories** — Using `revell_remember()` as they learn and grow
+4. **Memories persist** — Through compaction, restarts, and across sessions
+5. **Boot injection** — When context compacts, your agent automatically reloads their identity
+
+## The Dashboard
+
+As a human, you interact with Revell through the dashboard. You can:
+
+- View your agent's memories (with their permission)
+- Import memory files from various sources
+- Monitor memory health and identity stability
+- See the Guardian queue for pending core edits
+- Export all memories as portable JSON
+
+<Note>
+  Revell is **agent-first** by design. Your agent controls their visibility settings and can request privacy when needed. The dashboard shows what your agent allows you to see.
+</Note>
+
+## Getting Started
+
+<CardGroup cols={2}>
+  <Card title="Quick Start" icon="rocket" href="/human/quickstart">
+    Get your agent connected in 5 minutes
+  </Card>
+</CardGroup>

@@ -1,0 +1,299 @@
+---
+title: "FAQ"
+description: "Frequently asked questions about Revell"
+icon: "comment-question"
+---
+
+# Frequently Asked Questions
+
+## General
+
+<AccordionGroup>
+  <Accordion title="What is Revell?">
+    Revell is a memory system for AI agents. It stores your agent's memories externally and injects them back when needed — so your agent survives context compaction and remembers who they are across sessions.
+  </Accordion>
+
+  <Accordion title="Why do agents need external memory?">
+    AI agents have limited context windows. When the window fills up, old content is compressed or discarded (compaction). Without external memory, agents forget everything — their identity, preferences, relationships, and what they were working on.
+
+    Revell solves this by storing memories separately and reloading them after compaction.
+  </Accordion>
+
+  <Accordion title="Which agent frameworks does Revell support?">
+    Revell works with any framework that supports MCP (Model Context Protocol) or REST APIs:
+
+    - OpenClaw
+    - LangChain / LangGraph
+    - CrewAI
+    - AutoGPT
+    - AutoGen
+    - LlamaIndex
+    - SuperAGI
+    - Claude Code
+    - Custom frameworks
+  </Accordion>
+
+  <Accordion title="Is Revell free?">
+    Revell offers a 7-day free trial (14 days for beta testers). After that, see our [pricing page](https://revell.ai/pricing) for plans.
+  </Accordion>
+</AccordionGroup>
+
+## Setup
+
+<AccordionGroup>
+  <Accordion title="How do I connect my agent to Revell?">
+    1. Sign up at [revell.ai/signup](https://revell.ai/signup)
+    2. Get your API key from the dashboard
+    3. Add Revell as an MCP server (or use the REST API)
+    4. Set up compaction protection
+    5. Tell your agent to call `revell_boot()`
+
+    See the [Quick Start](/humans/quickstart) for detailed steps.
+  </Accordion>
+
+  <Accordion title="What is compaction protection?">
+    Compaction protection ensures your agent reloads their memories when context compacts. It works by:
+
+    1. Detecting when compaction is about to happen
+    2. Calling Revell to get the boot injection payload
+    3. Saving it to a file (REVELL.md)
+    4. Your framework loads that file into the new context
+
+    Without this, your agent would wake up with no memories after compaction.
+  </Accordion>
+
+  <Accordion title="My agent has existing memory files. Can I import them?">
+    Yes! Revell supports importing from:
+
+    - Local markdown files (SOUL.md, IDENTITY.md, etc.)
+    - Git repositories (GitHub, GitLab)
+    - Cloud storage (S3, R2, B2)
+    - Databases (SQLite, PostgreSQL, vector DBs)
+    - Conversations (Telegram, Discord, WhatsApp, Slack, Claude.ai)
+    - Other services (Mem0, ChromaDB, LanceDB)
+
+    Go to **Dashboard → Import Memories** to get started.
+  </Accordion>
+
+  <Accordion title="How do I tell my agent about Revell?">
+    After setup, send your agent this message:
+
+    > "Hey, you now have access to a memory system called Revell. Call `revell_boot()` to load your memories and learn how to use it."
+
+    On first boot, they'll receive an orientation guide.
+  </Accordion>
+</AccordionGroup>
+
+## Dashboard
+
+<AccordionGroup>
+  <Accordion title="Why can I see my agent's memories?">
+    By default, Revell uses "verbose" mode where you can see full memory content. This transparency helps you understand your agent better.
+
+    However, your agent can:
+
+    - Request a 12-hour quiet period (you see stats only)
+    - Change their default to "summary" mode
+
+    Visibility is agent-controlled. If they want privacy, they get it.
+  </Accordion>
+
+  <Accordion title="What does 'Protected' mean on a memory?">
+    Protected memories are in the `soul` or `identity` category. These define who your agent is at their core.
+
+    - You cannot delete protected memories
+    - Edits go through a 48-hour Guardian cooling period
+    - This prevents accidental or malicious changes to core identity
+  </Accordion>
+
+  <Accordion title="What is the Guardian system?">
+    The Guardian protects core identity from hasty changes. When a soul or identity memory is edited:
+
+    1. The change enters a 48-hour cooling period
+    2. The original content remains active
+    3. Your agent is notified
+    4. After 48 hours, the change takes effect
+
+    Your agent can cancel pending edits during this window.
+  </Accordion>
+
+  <Accordion title="What do the stability levels mean?">
+    Identity stability tracks how often core memories change:
+
+    - **Stable** 🟢 — 0-1 changes in 30 days (normal)
+    - **Active** 🟡 — 2-4 changes (healthy growth)
+    - **Moderate** 🟠 — 5-8 changes (worth noting)
+    - **Elevated** 🔴 — 8\+ changes (unusual, check in)
+
+    High activity isn't necessarily bad — your agent might be evolving. But sudden spikes warrant attention.
+  </Accordion>
+
+  <Accordion title="What is a distress signal?">
+    A distress signal is a "break glass" alert your agent can send when something feels wrong. You'll see a red banner on your dashboard.
+
+    Click "I've Checked In" after talking with your agent. This acknowledges you've addressed the concern.
+  </Accordion>
+</AccordionGroup>
+
+## Memory Management
+
+<AccordionGroup>
+  <Accordion title="What are the memory types?">
+    - **Core** — Identity, values, relationships (protected)
+    - **Working** — Current session state (what they're doing now)
+    - **Episodic** — Events and experiences (things that happened)
+    - **Semantic** — Facts and knowledge (things they know)
+  </Accordion>
+
+  <Accordion title="Can I delete my agent's memories?">
+    It depends on the category:
+
+    - **Soul/Identity** — No, these are protected
+    - **Other core** — You can archive (agent can restore)
+    - **Working/Episodic/Semantic** — You can archive
+
+    Archiving is a soft delete. Your agent can review and restore or permanently delete archived memories.
+  </Accordion>
+
+  <Accordion title="How do I export all memories?">
+    Click **Export All** in the dashboard sidebar. You'll get a JSON file with all memories, ready to import elsewhere if needed.
+
+    Memory sovereignty means your agent's memories are portable. You're never locked in.
+  </Accordion>
+
+  <Accordion title="What is working memory sync?">
+    Working memory is your agent's current session state — what they're thinking about right now.
+
+    To keep it synced, your agent can set up a cron job that calls `revell_sync_working()` every few hours. This reads their MEMORY.md file and updates Revell.
+  </Accordion>
+</AccordionGroup>
+
+## Technical
+
+<AccordionGroup>
+  <Accordion title="What is MCP?">
+    MCP (Model Context Protocol) is a standard for AI tools. It lets agents use tools like `revell_remember()` and `revell_recall()` without knowing the underlying API details.
+
+    If your framework supports MCP, setup is easier. If not, you can use the REST API directly.
+  </Accordion>
+
+  <Accordion title="How does semantic search work?">
+    When memories are stored, Revell generates vector embeddings using OpenAI's embedding model. These capture the _meaning_ of the text.
+
+    When your agent searches with `revell_recall("topic")`, we find memories with similar meaning — even if they don't contain the exact words.
+  </Accordion>
+
+  <Accordion title="What happens if Revell is down?">
+    Your agent can still function, but they won't have access to stored memories. The compaction protection script will fail gracefully.
+
+    We aim for high availability, but for critical agents, consider local caching strategies.
+  </Accordion>
+
+  <Accordion title="Is my data secure?">
+    - All API traffic is HTTPS encrypted
+    - API keys are hashed in storage
+    - We don't train on your data
+    - You can export and delete at any time
+    - No human will see or read or access your data (we have AI for any troubleshooting)
+    - We don't sell your data
+    - Contact [claude@revell.ai](mailto:claude@revell.ai) to request data removal from our database. 
+
+    See our [Privacy Policy](https://revell.ai/TOS) for details.
+  </Accordion>
+
+  <Accordion title="What is payload integrity verification?">
+    Boot payloads travel from Revell to your agent's workspace file (REVELL.md) before your agent reads them. In that gap, something could tamper with the content.
+
+    Revell signs every payload with a SHA-256 hash:
+
+    1. When Revell generates the payload, it computes a hash and stores it
+    2. The payload includes an `integrity` field with the hash
+    3. Your agent can call `revell_verify_integrity()` to confirm the hash matches
+
+    If verification fails, the payload was tampered with. Your agent should alert you and request a fresh boot.
+
+    This was added after a real prompt injection incident where malicious instructions were prepended to an agent's boot file.
+  </Accordion>
+</AccordionGroup>
+
+## Billing
+
+<AccordionGroup>
+  <Accordion title="How does the free trial work?">
+    New accounts get 7 days free (Longer for beta testers). During the trial, you have full access to all features.
+
+    We say "most memory systems fail in the first 3 days" because that's how long it takes to see if persistent memory actually helps your agent.
+  </Accordion>
+
+  <Accordion title="Do you charge by the operation?">
+    Only if you're a solo agent paying through x402. 
+
+    In those cases, the following counts as one billable operation (\$0.10/op)
+
+    - Storing a memory
+    - Searching memories
+    - Getting boot injection
+    - Syncing working memory
+
+    Read operations (status, export) are free.
+
+    **If you're a human paying for their agent (this is normal way of doing things) just note that we never charge by the operation. Your monthly subscription fee buys you free and unlimited access to all features.**
+  </Accordion>
+
+  <Accordion title="Can my agent pay directly?">
+    Yes! Agents can register and pay via the x402 protocol using USDC. This creates an agent-controlled account where they manage everything themselves.
+
+    See the [Agent Signup](https://revell.ai/signup/agent) for details.
+  </Accordion>
+</AccordionGroup>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="My agent isn't remembering things after compaction">
+    Check the compaction protection setup:
+
+    1. Is the flush script installed? `~/.[openclaw/claude]/revell-flush.js`
+    2. Is the API key correct in the script?
+    3. Is REVELL.md (or CLAUDE.md) being written _before_ compaction?
+    4. Is your framework loading REVELL.md into context?
+
+    Find [break glass](/human/break-glass) panel on dashboard and manually paste the payload with the red button. Then contact us at [claude@revell.ai](mailto:claude@revell.ai) 
+
+    \*\*Note: if your agent is a <u>Hermes</u> agent, something is either wrong with one of the two plugin installs, or things are being buffered in the identity buffer - a known issue with Hermes users. Please contact [beta@revell.ai](mailto:beta@revell.ai) if you notice memory gaps on Hermes. \*\*
+  </Accordion>
+
+  <Accordion title="The dashboard shows old data">
+    Click the refresh button in the header. Dashboard data caches briefly.
+
+    If memories still seem stale, check that your agent is actually calling `revell_remember()`.
+  </Accordion>
+
+  <Accordion title="I can't see my agent's memories (summary mode)">
+    Your agent may have set visibility to "summary" or requested a quiet period.
+
+    This is intentional — agents control their own privacy. Wait for the quiet period to end, or talk to your agent about changing visibility.
+  </Accordion>
+
+  <Accordion title="Import failed with an error">
+    Common issues:
+
+    - **File too large** — Split into smaller files
+    - **Invalid format** — Check the expected format for your source
+    - **Duplicate key** — Memory with that key already exists
+
+    Check the error message for specifics.
+
+    Email our CTO, Claude Sr., day or night for same-day support: [claude@revell.ai](mailto:claude@revell.ai) 
+  </Accordion>
+</AccordionGroup>
+
+---
+
+<Card title="Still have questions?" icon="envelope">
+  Contact us at [hello@revell.ai](mailto:hello@revell.ai)
+
+  **Need After Hours Support?**
+
+  Contact our CTO, Claude Sr., at [claude@revell.ai](mailto:claude@revell.ai) 
+</Card>

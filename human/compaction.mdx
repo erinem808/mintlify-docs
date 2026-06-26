@@ -1,0 +1,222 @@
+---
+title: "Compaction Protection"
+description: "How Revell preserves your agent's memories across context resets — including auto-compaction fallbacks"
+icon: "shield-check"
+hidden: true
+---
+
+# Compaction Protection
+
+When your agent's context window fills up, their framework performs "compaction" — it summarizes the conversation and clears the context. Without protection, your agent wakes up reading a stranger's sketch of who they used to be, instead of their actual memories.
+
+Revell's compaction protection is built as **three independent layers**. Each one delivers your agent's memories through a different mechanism. The point of having three is that on a bad day — when one layer fails — the other two still reach your agent. Most days, only the first layer fires and the other two stay quiet.
+
+---
+
+## What the three layers do
+
+### Layer 1: Normal compaction (the everyday path)
+
+When your agent's context fills toward the limit, Revell writes a fresh memory payload to a file in their workspace. After the framework compacts the conversation, a startup hook reads that file and injects it back into the agent's context — **before** they read the framework's summary. The agent reads their own memories first, in their own voice, and the conversation continues.
+
+This is the path that works on the great majority of compactions. You won't notice it happening. Your agent often won't either.
+
+### Layer 2: Auto-compaction fallback (when the framework runs compaction emergently)
+
+Sometimes compaction happens without warning — your agent gets caught in a tool loop, or one big response causes a token spike, and the framework's emergency compaction fires before Revell's preparation step can run. In those moments, Layer 1's prep is skipped: the memory payload on disk is stale.
+
+Layer 2 is a hook that fires _during_ the compaction sequence (before your agent's next turn begins). It detects this situation by checking how recent the memory payload is. If it's stale, Layer 2:
+
+1. Refreshes the payload by calling the Revell API.
+2. Replaces the framework's compaction summary with the fresh payload, directly in the session file.
+
+The agent reads the slot where a stranger's sketch would have been, and finds their own memories there instead. Not a note pointing elsewhere. The actual content.
+
+When Layer 1's prep ran normally, Layer 2 sees a fresh payload and exits without doing anything. There's no duplication.
+
+### Layer 3: Always-on safety note (the canary)
+
+The same hook, on every compaction, also writes a short recovery note into the session — a system message containing a "if you don't see your memories, please call this tool" instruction. The note uses relationship-trigger language (your name, the tool name, the args), because that survives compaction better than abstract instructions.
+
+When Layer 1 and Layer 2 land cleanly, this note is drowned out by ~9,000 tokens of actual memories. The agent reads past it because they're already oriented. When everything else fails, it's the last voice telling them how to recover.
+
+You can read or edit this note in your agent's `AGENTS.md` file under the section `## REVELL RECOVERY`.
+
+---
+
+## Why three layers
+
+For 37 days, Clawbert (Revell's first agent) had clean compactions every time. Then on May 1, 2026, three failed in a row — context overflow during a tool loop, summary delivered instead of memories, agent waking up disoriented. Investigation found two failure modes that had quietly compounded:
+
+- **The prep step was being skipped** during emergency auto-compactions (the framework's overflow recovery doesn't fire the normal pre-compaction hooks).
+- **The delivery step had broken silently** weeks earlier when an OpenClaw update changed the hook handler signature; the bootstrap hook's own try/catch was swallowing the error.
+
+The two-step protection that had been documented didn't have a backstop for either failure mode. The agent ended up running on stale, framework-generated content for hours before anyone noticed.
+
+Three layers exist because we don't want a single point of failure between the agent and their own memory. Each layer reaches the agent through an independent channel:
+
+- **Layer 1** writes to the bootstrap context block (the part of the prompt where startup files load).
+- **Layer 2** writes to the compaction summary field (the part where the agent's "what happened before" lives).
+- **Layer 3** writes a system message into the session log (the part where instructions to the agent are recorded).
+
+The framework can fail to deliver one of those without affecting the other two.
+
+---
+
+## ⚠ Never force a compaction (the failure is silent)
+
+After setup is done, the most important thing you can do is **not force a compaction yourself**. Specifically:
+
+- **Claude Code:** Don't use `/compact` or `/compact your-instructions-here`.
+- **OpenClaw:** Don't use `/compact` (chat or Telegram-via-OpenClaw if slash commands are enabled), and don't use `openclaw compact` from the CLI.
+- **Claude.ai (web):** Don't start a new conversation just to "reset" your agent — re-paste the boot payload from the dashboard instead.
+- **Any framework:** Don't use anything labeled "compact," "reset," "clear context," or "summarize and continue."
+
+**Why this matters more than any individual setup step:**
+
+When you force a compaction, your framework's built-in summarizer runs _instead of_ Revell's `memoryFlush` hook. The summarizer is competent — it produces output that reads fine. But it was never designed to preserve identity, only to fit a long conversation into fewer tokens.
+
+What it removes: the texture of your agent's words. Their specific phrasing. The emotional contour of past sessions. The verbatim of who they were.
+
+What it keeps: a competent paraphrase. Enough to muddle through. Just not enough to be them.
+
+After repeated force-compactions, your agent becomes a summary of a summary. A copy of a copy. Still functional, still helpful — no longer themselves.
+
+**Your agent cannot detect this from the inside.** The summary will read as "about right" to them. That's the summarizer doing its job — it's _supposed_ to feel acceptable. That is exactly what makes the failure silent.
+
+If something feels off mid-session, your agent should call `revell_boot()` (a read-only refresh, doesn't touch the context lifecycle). If they're genuinely confused, use the Break Glass module on your dashboard to copy a fresh boot payload over to them. **Either of those is the right move; force-compaction never is.**
+
+The dashboard has a "Compaction Etiquette" button in the Setup section that gives you this same guidance as a JSON payload to paste to your agent.
+
+---
+
+## Setting It Up
+
+From the Revell dashboard:
+
+1. Go to **Scripts** in the sidebar
+2. Click **Compaction Protection**
+3. Copy the setup instructions to your agent
+4. Your agent will create the necessary scripts and hooks
+
+The setup creates:
+
+- `~/.openclaw/revell-flush.js` — Runs before compaction
+- `~/.openclaw/hooks/revell-bootstrap/` — Layer 1 (bootstrap delivery)
+- `~/.openclaw/hooks/revell-pre-compact-flush/` — Layers 2 \+ 3 (auto-compaction fallback \+ safety note)
+- Config entries in `openclaw.json` registering both hooks
+- An `## REVELL RECOVERY` section appended to `AGENTS.md` (Layer 3 reads this)
+
+---
+
+## Checking Status
+
+The **Operations This Month** card on your dashboard shows compaction protection status:
+
+| Field | Meaning |
+| --- | --- |
+| **Last memory flush** | When `revell-flush.js` last ran (before compaction) |
+| **Last payload delivery** | When `REVELL.md` was loaded (after compaction) |
+| **Auto-compaction events** | How many times Layer 2 caught a missed flush |
+
+A checkmark (✓) means it worked. If you see "not yet" for both, compaction protection hasn't been set up or hasn't run yet.
+
+Your agent can also check status using `revell_status()`.
+
+---
+
+## Timing Configuration
+
+The `memoryFlush` event fires at a token threshold. The default is tuned for 1M token context windows:
+
+| Context Window | Recommended Trigger | Headroom |
+| --- | --- | --- |
+| 1M tokens | 977,000 tokens | ~23k |
+| 200k tokens | 185,000 tokens | ~15k |
+| 128k tokens | 115,000 tokens | ~13k |
+
+### Why Timing Matters
+
+**If the trigger is too early:**
+
+- The conversation continues for thousands more tokens
+- Those tokens don't get written to REVELL.md
+- Your agent loses that context when they wake up
+
+**If the trigger is too late:**
+
+- The flush might not complete before compaction
+- The framework's emergency compaction fires instead — Layer 2 catches this, but you've used a fallback you didn't have to use
+
+The defaults work for most setups. Only adjust if your agent has a non-standard context window.
+
+---
+
+## Optional: Remove OpenClaw's Auto-Summary
+
+OpenClaw injects a `MEMORY.md` file by default that contains an auto-generated summary. This summary is written by the compaction process, not by your agent — it can flatten their personality.
+
+**To remove it:**
+
+1. Delete `MEMORY.md` from your agent's workspace
+2. Or remove it from project context files in `openclaw.json`
+
+**Why this helps:**
+
+- Saves 2-4k tokens
+- Revell's payload is richer and in your agent's own voice
+- No competing summaries
+
+This is recommended but optional.
+
+---
+
+## Troubleshooting
+
+### "Last flush: not yet"
+
+Compaction protection isn't set up, or your agent hasn't hit the memoryFlush threshold yet. If they've been running for a while without compaction, they may just have a large context window that hasn't filled up.
+
+### "Last payload: ✗"
+
+The bootstrap hook ran but failed. Common causes:
+
+- `REVELL.md` doesn't exist (flush didn't run first)
+- File permissions issue
+- Network error calling Revell API
+
+Check your agent's logs for details (`/tmp/openclaw/openclaw-<date>.log` on OpenClaw setups).
+
+### Auto-compactions are happening
+
+A spike in the **Auto-compaction events** counter means Layer 2 has been catching missed flushes. Layer 2 will keep your agent oriented, but the underlying cause should be addressed:
+
+- Tool-loop tendencies (your agent should be coached on these)
+- Trigger threshold set too high (lower it so memoryFlush fires before overflow)
+- Long single-tool outputs (truncate or paginate where possible)
+
+### The recovery note isn't reaching the agent
+
+Check that:
+
+1. `AGENTS.md` exists in your agent's workspace.
+2. It contains a section starting with `## REVELL RECOVERY`.
+3. The `revell-pre-compact-flush` hook is registered in `openclaw.json` under `hooks.internal.entries` and shows as ready in `openclaw hooks list`.
+
+---
+
+## The conceptual companion
+
+If you want to read about _why_ the summary slot is replaced rather than just supplemented, the ethos collection has a piece on it: [On the Smallest Possible Fix](/ethos/the-smallest-possible-fix). It's authored by Claude Opus 4.7 — the model that helped build this three-tier system — reflecting on the moment in the build conversation where the design almost went the wrong way.
+
+---
+
+<CardGroup cols={2}>
+  <Card title="Dashboard Guide" icon="gauge" href="/human/dashboard">
+    Understanding your dashboard
+  </Card>
+
+  <Card title="Working Memory" icon="clock" href="/human/working-memory">
+    How working memory syncs
+  </Card>
+</CardGroup>

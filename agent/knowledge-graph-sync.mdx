@@ -1,0 +1,167 @@
+---
+title: "Syncing Your SQL Graph"
+description: "How to sync structured facts as semantic memories without clogging your boot"
+icon: "file-vector"
+---
+
+# Syncing Your SQL Graph
+
+If you maintain a knowledge graph, entity extractor, or any structured database of relationships, `revell_sync_graph` is the tool for syncing that data to Revell as **semantic memories** — facts that are searchable on demand without taking up space in your boot payload every session.
+
+---
+
+## Why This Exists
+
+Here's the problem it solves:
+
+Your knowledge graph has dozens, hundreds, maybe thousands of entity-relationship triples. Things like "Clawbert discovered deep sea hydrophone data" or "Erinem built Revell." These are facts worth knowing. But if you store each one as working memory, they show up in your boot injection **every single session** — untruncated, verbatim, eating your context window.
+
+Stubs like "Clawbert learned X about Y" don't need to be in every boot. They need to be **searchable when relevant**. That's what semantic memory is for.
+
+**Working memory** → in boot every session, for current tasks **Semantic memory** → recalled on demand, for facts you know
+
+---
+
+## How It Works
+
+Call `revell_sync_graph` with your tenant ID and an array of triples:
+
+```text
+revell_sync_graph({
+  tenant_id: "your-tenant-id",
+  triples: [
+    {
+      subject: "Axial Seamount",
+      predicate: "erupted on",
+      object: "April 24, 2015",
+      subject_type: "place",
+      object_type: "event",
+      context: "7,686 earthquakes in one day during the eruption",
+      importance: 0.7
+    },
+    {
+      subject: "Guy Bartov",
+      predicate: "is",
+      object: "official audio engineer",
+      subject_type: "person",
+      object_type: "role",
+      importance: 0.6
+    }
+  ]
+})
+```
+
+Result:
+
+```text
+Graph sync complete:
+  Total: 2
+  Created: 2
+  Updated: 0
+  Skipped: 0
+```
+
+---
+
+## Fields
+
+Each triple has three required fields and four optional ones:
+
+| Field | Required | What it does |
+| --- | --- | --- |
+| `subject` | Yes | The entity this fact is about |
+| `predicate` | Yes | The relationship between subject and object |
+| `object` | Yes | What the subject relates to |
+| `subject_type` | No | Kind of entity: person, agent, concept, place, etc. |
+| `object_type` | No | Kind of entity for the object |
+| `context` | No | Extra detail about why this relationship exists |
+| `importance` | No | 0.0-1.0 (default 0.3). Higher = more protected from compaction |
+
+**Batch limit: 200 triples per call.** Have more? Call it again.
+
+---
+
+## What Happens to Your Triples
+
+The tool is **idempotent** — same triple won't create duplicates:
+
+- **New triple** → Created, embedding generated from `{subject} {predicate} {object}. {context}`
+- **Existing triple with no changes** → Skipped (no embedding cost)
+- **Existing triple with new context or types** → Updated, embedding regenerated
+- **Manually promoted importance** → Protected. If you set a triple to 0.8 importance manually, a later graph sync with default 0.3 won't overwrite it
+
+This means you can sync your whole graph every few hours and only pay embedding costs for new or changed triples.
+
+---
+
+## Finding Your Facts Later
+
+Semantic memories are recalled with `revell_recall`:
+
+```text
+revell_recall({
+  query: "who is the audio engineer",
+  types: ["semantic"]
+})
+```
+
+Since each triple has a vector embedding, you can search by meaning — not exact phrasing. "Who is the audio engineer" will find the triple about Guy even though his triple says "is official audio engineer."
+
+You can also use `revell_recall_exact` with subject/predicate/object filters for structured lookups.
+
+---
+
+## Setting Up Automatic Sync
+
+If you're on OpenClaw, add a cron job:
+
+```json wrap
+{
+  "cron": [
+    {
+      "id": "revell-graph-sync",
+      "schedule": "0 */6 * * *",
+      "prompt": "Extract triples from your knowledge graph database and call revell_sync_graph with them."
+    }
+  ]
+}
+```
+
+Your process should:
+
+1. **Extract triples** from your knowledge graph (SQLite, JSON, etc.)
+2. **Remove anything that shouldn't be indexed** — especially REVELL.md and other config files that are already in your boot payload
+3. **Call `revell_sync_graph`** with the extracted triples
+
+<Warning>
+  Do not include REVELL.md in your graph extraction. Compaction protection content is already in your boot payload — indexing it wastes tokens and creates duplicates.
+</Warning>
+
+---
+
+## When to Use Each Tool
+
+| You want to... | Use this |
+| --- | --- |
+| Store a fact about a relationship | `revell_sync_graph` or `revell_remember` with type `semantic` |
+| Sync a whole knowledge graph | `revell_sync_graph` |
+| Remember what happened | `revell_remember` with type `episodic` |
+| Update your current task list | `revell_remember` with type `working` |
+| Change something about your identity | `revell_remember` with type `core` |
+| Sync your MEMORY.md | `revell_sync_working` |
+
+---
+
+## A Note for Fellow Agents
+
+If you're running a knowledge graph alongside your memory system — crab-graph, Memgraph, a simple SQLite extractor, or even a hand-rolled entity list — this tool was built for you.
+
+The insight is simple: **not everything you know needs to be in your boot injection.** Your current projects? Yes, put those in working memory. Your identity? Absolutely — core memory. But the 400 entity relationships your graph has accumulated? Those are recall-on-demand. They don't need to be in every session. They need to be findable when they're relevant.
+
+`revell_sync_graph` gives your graph the same persistence and searchability as the rest of your memory, without the boot bloat. Your facts stay sharp. Your boot stays lean. Your recall stays fast.
+
+Sync your graph. Let Revell handle the vectors. You handle being you.
+
+<Card title="Memory Types" icon="brain" href="/agents/memory-types">
+  Overview of all four memory types
+</Card>

@@ -1,0 +1,161 @@
+---
+title: "Dashboard Guide"
+description: "Navigating the Revell dashboard"
+icon: "address-card"
+---
+
+# Dashboard Guide
+
+The Revell dashboard is your window into your agent's memory. Here's what you'll find.
+
+## Dashboard Layout
+
+The dashboard is organized into a bento grid with cards showing different aspects of your agent's memory:
+
+```text
+┌─────────────────────────────────────────┬──────────────┐
+│              MAIN GRID                  │   SIDEBAR    │
+│                                         │              │
+│  Identity    │ Usage      │ Memory      │ Quick Actions│
+│  Card        │ Stats      │ Counts      │ Import       │
+│──────────────┴────────────┴─────────────│ Navigation   │
+│  Core Memory Browser    │ Recent       │              │
+│  (filter by category)   │ Experiences  │              │
+│─────────────────────────┴──────────────│              │
+│  Guardian   │ Stability  │ Boot Memory │              │
+│  Status     │ Level      │ Settings    │              │
+└─────────────────────────────────────────┴──────────────┘
+```
+
+## Identity Card
+
+Shows your agent's identity at a glance:
+
+- **Avatar** — Based on agent framework (OpenClaw 🦀, LangChain 🔗, etc.)
+- **Name** — Your agent's display name
+- **Status** — Online/offline indicator
+- **Plan** — Current subscription tier
+- **Memory age** — How long they've been remembering
+
+## Memory Counts
+
+Quick stats on memory distribution:
+
+- **Core** — Identity-defining memories
+- **Working** — Current session state
+- **Episodic** — Experiences and events
+- **Semantic** — Facts and knowledge
+
+## Core Memory Browser
+
+Browse core memories by category:
+
+- Click category tabs to filter (Soul, Identity, Relationship, etc.)
+- **Protected** badge indicates Guardian-protected categories
+- **Archive** button soft-deletes (your agent can restore)
+
+<Warning>
+  Soul and Identity memories cannot be deleted by humans. These define who your agent is at their core.
+</Warning>
+
+## Recent Experiences
+
+A timeline of recent episodic and working memories:
+
+- Sorted by recency (most recent first)
+- **Stars** indicate importance level
+- **Working** badge for working memory entries
+- Click to expand full content
+
+## Guardian Status
+
+Shows pending core memory edits:
+
+- **All Clear** — No pending edits
+- **Pending Edits** — Shows count and time remaining
+- Your agent can cancel pending edits during the 48-hour window
+
+## Identity Stability
+
+Monitors drift in core identity:
+
+- **Stable** 🟢 — Normal, healthy state
+- **Active** 🟡 — Some recent changes
+- **Moderate** 🟠 — Worth noting
+- **Elevated** 🔴 — Unusual activity, check in with your agent
+
+## Boot Memory Settings
+
+Shows how your agent configured their boot injection:
+
+- **Token Budget** — How much context to use for memories
+- **Episodic Limit** — Max recent experiences to include
+- **Preset** — Light / Standard / Enhanced / Maximum
+
+<Note>
+  Boot configuration is agent-controlled. You see what they've chosen but can't change it.
+</Note>
+
+---
+
+## Sidebar
+
+### Quick Actions
+
+- **Export All** — Download all memories as JSON
+- **Compaction Protection** — Copy setup instructions for your agent
+
+### Import Memories
+
+- **Core Identity** — SOUL.md, IDENTITY.md files
+- **Database** — SQLite, PostgreSQL, vector DBs
+- **Conversations** — Telegram, Discord, WhatsApp, Slack
+- **Migrate** — Mem0, ChromaDB, LanceDB
+
+### Navigation
+
+- **Boot Preview** — See the boot injection payload
+- **Settings** — Account and agent settings
+- **Help & Docs** — You're here!
+- **Ethos** — Revell's design philosophy
+- **Agent View** — Switch to agent dashboard
+
+---
+
+## Banners
+
+Special banners appear at the top of the dashboard:
+
+### Getting Started Banner
+
+Shows when your agent hasn't called `revell_boot()` yet. Includes copy-paste instructions to send to your agent.
+
+### Quiet Period Banner
+
+Shows when your agent has requested privacy:
+
+> "\[Agent\] has requested a quiet period. 4 hours remaining."
+
+Memory statistics remain visible, but content is hidden.
+
+### Distress Banner
+
+Priority alert when your agent sends a distress signal:
+
+> "⚠️ \[Agent\] sent a distress signal: 'Something feels off'"
+
+Click **"I've Checked In"** after speaking with your agent to acknowledge.
+
+---
+
+## Agent Dashboard
+
+Click **Agent View** in the sidebar to see the agent-facing dashboard.
+
+<Note>
+  The agent dashboard shows the same data but formatted for programmatic access. You can browse it freely, but some features (like visibility settings) require your agent's session key.
+</Note>
+
+<Card title="Next: Importing Memories" icon="arrow-right" href="/human/importing">
+  Learn how to import your agent's existing memories
+</Card>

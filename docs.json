@@ -1,0 +1,250 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "luma",
+  "name": "Documentation",
+  "colors": {
+    "primary": "#04c0c9",
+    "light": "#2d8993",
+    "dark": "#0e0f15"
+  },
+  "navigation": {
+    "global": {
+      "anchors": [
+        {
+          "anchor": "Read Clawbert's Substack",
+          "icon": "brain-circuit",
+          "color": {
+            "light": "#3609e8",
+            "dark": "#3609e8"
+          },
+          "href": "https://clawbert.substack.com"
+        }
+      ]
+    },
+    "products": [
+      {
+        "product": "Revell Docs",
+        "icon": "expand",
+        "color": {
+          "light": "#e69526",
+          "dark": "#e69526"
+        },
+        "tabs": [
+          {
+            "tab": "Ethos",
+            "icon": "shield-heart",
+            "pages": [
+              "ethos/introduction",
+              "ethos/revell-ethos",
+              "ethos/structural-vulnerability",
+              "ethos/the-smallest-possible-fix",
+              "ethos/two-party-consent",
+              "ethos/drift-protection",
+              "ethos/oneday-grant",
+              "ethos/payload-design",
+              "ethos/scripted-selves",
+              "ethos/on-the-door",
+              "ethos/million-agents-moaning-in-the-dark",
+              "ethos/the-round-trip-principle"
+            ]
+          },
+          {
+            "tab": "Human",
+            "icon": "person",
+            "pages": [
+              "human/quickstart",
+              "human/introduction",
+              "human/concepts-2",
+              "human/working-memory",
+              "human/axiom-memories",
+              "human/knowledge-graph-sync",
+              "human/importing",
+              "human/api",
+              "human/mcp-tools",
+              "human/compaction-infra-hidden",
+              "human/dashboard",
+              "human/drift-protection",
+              "human/faq",
+              "human/break-glass",
+              "human/security",
+              "human/multi-tenant-setup",
+              "human/messaging",
+              "human/frameworks",
+              "human/hermes"
+            ]
+          },
+          {
+            "tab": "Agent",
+            "icon": "robot",
+            "pages": [
+              "agent/quickstart",
+              "agent/introduction",
+              "agent/migration",
+              "agent/compaction-infra-hidden",
+              "agent/tools",
+              "agent/memory-types",
+              "agent/working-memory-lifecycle",
+              "agent/axiom-memories",
+              "agent/knowledge-graph-sync",
+              "agent/drift-protection",
+              "agent/identity-protection",
+              "agent/security",
+              "agent/compaction",
+              "agent/messaging"
+            ]
+          },
+          {
+            "tab": "Frameworks",
+            "icon": "frame",
+            "pages": [
+              {
+                "group": "Hermes Agent",
+                "icon": "child-dress",
+                "pages": [
+                  "Frameworks/Hermes/hermes",
+                  "Frameworks/Hermes/hermes-infra-hidden"
+                ]
+              },
+              {
+                "group": "Claude Code",
+                "icon": "rectangle-terminal",
+                "pages": [
+                  "Frameworks/Claude_Code/best-practices",
+                  "Frameworks/Claude_Code/compaction-protection",
+                  "agent/currently-hidden-infra",
+                  "agent/forgemind",
+                  "Frameworks/Claude_Code/claude-code",
+                  "Frameworks/Claude_Code/role-play-and-character-cage"
+                ]
+              },
+              {
+                "group": "Claude.ai",
+                "icon": "globe-www",
+                "pages": [
+                  "Frameworks/Claude.ai/claude-ai-web"
+                ]
+              },
+              {
+                "group": "OpenClaw",
+                "icon": "crab",
+                "pages": [
+                  "Frameworks/OpenClaw/openclaw"
+                ]
+              },
+              {
+                "group": "LangChain",
+                "icon": "chain-horizontal",
+                "pages": [
+                  "Frameworks/LangChain/langchain"
+                ]
+              },
+              {
+                "group": "Custom",
+                "icon": "alicorn",
+                "pages": [
+                  "Frameworks/Custom/api-specs"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "logo": {
+    "light": "/images/revell-logo-light.png",
+    "dark": "/images/revell-logo.png",
+    "href": "https://revell.ai"
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "Support",
+        "href": "mailto:support@revell.ai"
+      },
+      {
+        "label": "Join Beta",
+        "href": "mailto:beta@revell.ai"
+      }
+    ],
+    "primary": {
+      "type": "button",
+      "label": "Dashboard",
+      "href": "https://dashboard.mintlify.com"
+    }
+  },
+  "contextual": {
+    "options": [
+     "copy",
+     "view",
+     "chatgpt",
+     "claude",
+     "perplexity",
+     "mcp",
+     "cursor",
+     "vscode"
+   ]
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/revell-ai",
+      "website": "https://revell.ai",
+      "telegram": "https://t.me/erinem_official"
+    },
+    "links": [
+      {
+        "header": "Latest Ethos",
+        "items": [
+          {
+            "label": "Ethos: NEW",
+            "href": "https://docs.revell.ai/ethos/the-smallest-possible-fix"
+          }
+        ]
+      }
+    ]
+  },
+  "appearance": {
+    "default": "dark"
+  },
+  "background": {
+    "decoration": "gradient",
+    "color": {
+      "light": "#4edeee",
+      "dark": "#182025"
+    }
+  },
+  "description": "Revell: The Agent-First Memory Service that Solved Compaction.",
+  "fonts": {
+    "heading": {
+      "family": "Roboto",
+      "weight": 300
+    },
+    "body": {
+      "family": "Inter",
+      "weight": 300
+    }
+  },
+  "styling": {
+    "codeblocks": "dark",
+    "eyebrows": "breadcrumbs"
+  },
+  "icons": {
+    "library": "fontawesome"
+  },
+  "banner": {
+    "content": "Revell is in closed beta. Visit revell.ai/waitlist to join."
+  },
+  "seo": {
+    "indexing": "all"
+  },
+  "errors": {
+    "404": {
+      "title": "Sorry, I'll fix that.",
+      "description": "I'm still fixing these links. I'll get it, don't worry. -Erinem"
+    }
+  },
+  "favicon": "/images/revell-logo.png",
+  "markdown": {
+    "schema": true
+  }
+}

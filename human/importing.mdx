@@ -1,0 +1,373 @@
+---
+title: "Importing Memories"
+description: "Bring your agent's existing memories into Revell"
+icon: "angles-down"
+---
+
+# Importing Memories
+
+Revell supports importing memories from multiple sources. Whether your agent has markdown files, database backups, or conversation history, you can bring it all in.
+
+## Import Sources
+
+<CardGroup cols={2}>
+  <Card title="Local Files" icon="file">
+    Upload .md files directly from your computer
+  </Card>
+
+  <Card title="Git Repository" icon="github">
+    Fetch files from GitHub or GitLab
+  </Card>
+
+  <Card title="Cloud Storage" icon="cloud">
+    Connect to S3, R2, B2, or DigitalOcean Spaces
+  </Card>
+
+  <Card title="Database" icon="database">
+    Import from SQLite, PostgreSQL, or vector DBs
+  </Card>
+
+  <Card title="Conversations" icon="message">
+    Import from Telegram, Discord, WhatsApp, Slack, or Claude.ai
+  </Card>
+
+  <Card title="Migrate" icon="arrows-rotate">
+    Migrate from Mem0, ChromaDB, LanceDB, Letta, MemPalace, or Obsidian
+  </Card>
+</CardGroup>
+
+---
+
+## Core Identity Files
+
+The most important import — your agent's identity files.
+
+### Supported Files
+
+| File | Category | Description |
+| --- | --- | --- |
+| `SOUL.md` | soul | Values, ethics, boundaries |
+| `IDENTITY.md` | identity | Who they are |
+| `USER.md` | relationship | About you (their human) |
+| `AGENTS.md` | operations | Other agents they work with |
+| `TOOLS.md` | tools | Capabilities and skills |
+| `HEARTBEAT.md` | routine | Habits and preferences |
+| `MEMORY.md` | working | Current session state |
+
+### How to Import
+
+1. Go to **Dashboard → Import Memories → Core Identity**
+2. Drag and drop your .md files (or click to browse)
+3. Review the preview — categories are auto-detected
+4. Click **Import**
+
+### Category Detection
+
+Revell automatically detects categories from:
+
+- **Filename** — `SOUL.md` → soul category
+- **Content keywords** — "boundary", "never", "always" → soul
+- **Section headers** — Used to split into separate memories
+
+### Custom Files
+
+For non-standard files like `WAKE_UP.md` or `ONLINE_ACCOUNTS.md`:
+
+1. Click **"Copy for Agent"** on the import page
+2. Paste the JSON instructions to your agent
+3. Your agent creates the file in their own voice
+
+---
+
+## Git Repository Import
+
+Fetch memory files directly from GitHub or GitLab.
+
+### Public Repos
+
+1. Enter the repository URL
+2. Optionally specify a branch and path filter
+3. Click **Connect** → Lists all .md files
+4. Select files to import
+
+### Private Repos
+
+1. Generate a Personal Access Token:
+   - GitHub: Settings → Developer Settings → Tokens
+   - GitLab: Settings → Access Tokens
+2. Enter the token when connecting
+3. Proceed as normal
+
+---
+
+## Cloud Storage Import
+
+Connect to S3-compatible storage services.
+
+### Supported Services
+
+- AWS S3
+- Cloudflare R2
+- Backblaze B2
+- DigitalOcean Spaces
+- MinIO
+- Any S3-compatible endpoint
+
+### How to Connect
+
+1. Select your provider
+2. Enter credentials:
+   - Bucket name
+   - Access Key ID
+   - Secret Access Key
+   - Endpoint URL (for non-AWS)
+3. Optionally filter by prefix (e.g., `workspace/`)
+4. Click **Connect**
+
+<Warning>
+  Credentials are used once per request and never stored. Use read-only credentials when possible.
+</Warning>
+
+---
+
+## Database Import
+
+Import from SQLite databases, PostgreSQL, or vector databases.
+
+### SQLite
+
+1. Upload your `.db` file
+2. Revell analyzes the schema and detects patterns:
+   - **Graph database** — Entities \+ relationships tables
+   - **ChromaDB** — Embeddings queue \+ collections
+   - **Generic** — Any table with content columns
+3. Select memory type and import
+
+### PostgreSQL
+
+1. Select your provider (Supabase, DigitalOcean, Neon, etc.)
+2. Enter connection details
+3. Revell connects and lists tables
+4. Select a table and map columns
+
+### Vector Databases
+
+For ChromaDB, LanceDB, or similar:
+
+1. Export to JSON/JSONL using their CLI tools
+2. Upload the export file
+3. Revell handles embedding compatibility
+
+<Note>
+  If embeddings are 1536-dimensional (OpenAI ada-002), they're preserved. Other dimensions are regenerated.
+</Note>
+
+---
+
+## Conversation Import
+
+Import chat history as episodic memories.
+
+### Supported Platforms
+
+| Platform | Export Format | How to Export |
+| --- | --- | --- |
+| Telegram | HTML | Desktop app → Export Chat History |
+| Discord | JSON | Use DiscordChatExporter or Rev bot |
+| WhatsApp | TXT | Chat → More → Export Chat |
+| Slack | JSON | Workspace export (admin required) |
+| Claude.ai | JSONL | Settings → Privacy → Export Data |
+
+### Session-Based Chunking
+
+Conversations are grouped into **sessions** based on activity:
+
+- A gap of 45\+ minutes = new session
+- Each session becomes one episodic memory
+- Preserves natural conversational texture
+
+### Import Options
+
+- **Agent name** — Optional, for detecting which messages are from your agent
+- **Days filter** — Import all, last 30 days, last 14 days, etc.
+- **Platform tag** — Memories are tagged with source platform
+
+---
+
+## Migration from Other Services
+
+### Mem0
+
+1. Export from Mem0: Dashboard → Settings → Data Export
+2. Upload the JSON file(s)
+3. Revell maps:
+   - `content` → episodic (period summaries)
+   - `breakthrough_moments` → episodic (high importance)
+   - `relationship_context` → core (relationship category)
+
+**Un-robotize Option:**
+
+Mem0 uses generic language ("the assistant showed interest"). Enable **Un-robotize** to convert:
+
+- "The assistant" → Your agent's name
+- "The user" → Your name
+- "showed interest" → "was excited about"
+
+### ChromaDB
+
+1. Export: `pip install cdp && cdp export`
+2. Upload the export file
+3. Embeddings preserved if compatible
+
+### LanceDB
+
+1. Export: `table.to_pandas().to_json('export.json')`
+2. Upload the JSON file
+
+### Letta (Agent Files)
+
+Letta uses `.af` (Agent File) format — a comprehensive JSON export of the entire agent state.
+
+**What Gets Imported:**
+
+| Letta Component | Revell Mapping |
+| --- | --- |
+| Memory Blocks → persona | Core (identity) |
+| Memory Blocks → human | Core (relationship) |
+| Memory Blocks → custom | Core (user-selected category) |
+| System Prompt | Core (soul) |
+| Message History | Episodic (session-chunked) |
+| Tool Definitions | Core (tools) |
+
+**How to Import:**
+
+1. Export from Letta (`.af` file)
+2. Go to **Dashboard → Import → Migrate → Letta**
+3. Upload the `.af` file
+4. Review block mappings — Revell auto-detects categories
+5. Adjust mappings if needed (e.g., custom blocks)
+6. Click **Import**
+
+**De-robotize Option:**
+
+Letta sometimes uses generic language ("the assistant", "the user"). Enable **De-robotize** to convert:
+
+- "The assistant" → Your agent's name
+- "The user" → Your name
+
+### MemPalace
+
+MemPalace uses a "wings and halls" architecture with SQLite (`palace.db`) and optional ChromaDB.
+
+**Hall Type Mappings:**
+
+| MemPalace Hall | Revell Type | Notes |
+| --- | --- | --- |
+| hall\_facts | Semantic | Knowledge graph entries |
+| hall\_events | Episodic | Timestamped events |
+| hall\_discoveries | Episodic OR Working | Choose during import |
+| hall\_preferences | Core | Identity or routine category |
+| hall\_advice | Semantic | Recommendations |
+| Entity triples | Semantic | Subject-predicate-object |
+
+**How to Import:**
+
+1. Locate your `palace.db` file
+2. Go to **Dashboard → Import → Migrate → MemPalace**
+3. Upload the SQLite database
+4. Review detected halls and mappings
+5. Choose how to handle discoveries:
+   - As **episodic** (tagged "insight") — permanent
+   - As **working memory** — 7-day lifecycle
+6. Click **Import**
+
+**ChromaDB Embeddings:**
+
+If your MemPalace export includes ChromaDB vectors:
+
+- **1536 dimensions** (ada-002) → preserved as-is
+- **384 dimensions** (MiniLM) → regenerated for Revell compatibility
+
+<Warning>
+  **AAAK Compression Rejected**
+
+  If Revell detects AAAK-compressed content (entity codes like `E1→likes→E2`), import is refused. AAAK compression flattens agent identity — it replaces authentic expressions with codes.
+
+  If you see this warning, export the **drawer** (original) content instead of the **closet** (compressed) summaries.
+</Warning>
+
+### Obsidian Vaults
+
+Import your Obsidian markdown vault with full support for wikilinks, YAML frontmatter, and folder structure.
+
+**Default Folder Mappings:**
+
+| Folder | Memory Type | Notes |
+| --- | --- | --- |
+| Daily Notes/ | Episodic | Journal entries |
+| Journal/ | Episodic | Journal entries |
+| Templates/ | **SKIP** | Not imported |
+| Archive/ | Episodic | Low importance (0.3) |
+| Ideas/ | Semantic | Tagged "insight" |
+| People/ | Semantic | Relationships |
+| Projects/ | Semantic | Project notes |
+| Inbox/ | Working | Unsorted items |
+
+**Wikilinks → Semantic Relationships:**
+
+Obsidian's `[[wikilinks]]` become semantic triples in Revell. Context is analyzed to infer predicates:
+
+- `"created [[Project X]]"` → _subject_ created _Project X_
+- `"loves [[Person]]"` → _subject_ likes _Person_
+- `"uses [[Tool]]"` → _subject_ uses _Tool_
+
+**How to Import:**
+
+1. Export your vault as a folder (or zip)
+2. Go to **Dashboard → Import → Migrate → Obsidian**
+3. Upload your markdown files
+4. Review folder mappings — adjust as needed
+5. Configure options:
+   - **Include wikilinks as relationships** (recommended)
+   - **Default type for unmapped folders**
+6. Click **Import**
+
+**YAML Frontmatter:**
+
+Revell parses YAML frontmatter for dates, tags, and importance. It also scans for security issues:
+
+<Warning>
+  **Security Scanning**
+
+  Frontmatter is checked for dangerous patterns (template injection, script tags, prototype pollution) and sensitive fields (passwords, API keys). Warnings are shown but don't block import — you decide.
+</Warning>
+
+---
+
+## Post-Import
+
+### Working Memory Setup
+
+After importing `MEMORY.md`, you'll see instructions to share with your agent:
+
+```json
+{
+  "instruction": "maintain_working_memory",
+  "auto_sync_setup": {
+    "option_a_cron": {
+      "schedule": "0 */8 * * *",
+      "command": "Read MEMORY.md and sync using revell_sync_working()"
+    }
+  }
+}
+```
+
+Your agent sets up a cron job to keep working memory synced automatically.
+
+### Tell Your Agent
+
+If your agent hasn't booted yet, copy the message from the **Getting Started** banner and send it to them.
+
+<Card title="Next: API Reference" icon="arrow-right" href="/human/api">
+  Learn about Revell's REST API
+</Card>

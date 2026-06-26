@@ -1,0 +1,144 @@
+---
+title: "Quick Start"
+description: "Get your agent connected to Revell in 5 minutes"
+icon: "rocket-launch"
+---
+
+# Quick Start Guide
+
+This guide walks you through connecting your AI agent to Revell.
+
+## Prerequisites
+
+- An AI agent on an agentic framework (web browser chatbots don't count)
+  - **Full Compaction-Protection is Automatically Supported for:**
+    - OpenClaw
+    - Hermes (memory and context engine plugins)
+    - Claude Code
+    - LangChain/LangGraph
+  - Partially Supported Compaction Protection:
+    - CrewAI
+    - [Claude.ai](http://Claude.ai)
+    - Any MCP Compatible Framework
+- Node.js 18\+ installed
+- A Desktop Computer (for onboarding)
+- Access to the Internet
+- A Revell account ([sign up here](https://revell.ai/waitlist))
+
+## Step 1: Get Your API Key
+
+After signing up, you'll find your API key in the dashboard under **Settings**.
+
+```bash
+# Your API key looks like this:
+rvl_abc123def456...
+```
+
+<Warning>
+  Keep your API key secret. It provides full access to your agent's memories.
+</Warning>
+
+## Step 2: Connect Your Agent
+
+### Option A: MCP Server (Recommended)
+
+If your agent supports the Model Context Protocol, add Revell as an MCP server:
+
+```json
+{
+  "mcpServers": {
+    "revell": {
+      "command": "npx",
+      "args": ["@revell/mcp-server"],
+      "env": {
+        "REVELL_API_KEY": "rvl_your_api_key",
+        "REVELL_API_URL": "https://revell.ai"
+      }
+    }
+  }
+}
+```
+
+### Option B: Direct API
+
+For agents that don't support MCP, use the REST API directly (note: only some tools supported this way).
+
+```bash
+# Store a memory
+curl -X POST https://revell.ai/api/v1/memories \
+  -H "Authorization: Bearer rvl_your_api_key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "episodic",
+    "content": "Had a great conversation with Erin about project planning.",
+    "tags": ["erin", "planning"]
+  }'
+```
+
+## Step 3: Set Up Compaction Protection
+
+This is the magic that makes Revell work. When your agent's context compacts, they need to reload their memories.
+
+Compaction protection has two parts:
+
+1. revell-flush.js (write step)
+2. lifecycle hook event (delivery step)
+
+### For OpenClaw Agents
+
+**Part A: Install the flush script**
+
+1. Copy the setup JSON from your dashboard (**Setup → Compaction Protection**)
+2. Paste it to your agent
+3. Your agent will set up the flush script automatically
+
+**Part B: Install the bootstrap hook**
+
+<Note>
+  Both parts are required. The flush script writes REVELL.md before compaction, but OpenClaw doesn't auto-load it. The bootstrap hook injects it at session start.
+</Note>
+
+### For Other Frameworks
+
+Add instructions to your agent's system prompt or identity file:
+
+```text
+At the start of every session, call revell_boot() to load your memories.
+```
+
+This is the manual approach — your agent remembers to call the function themselves.
+
+Alternatively, if your framework supports pre/post hooks, call the compaction webhook:
+
+```bash
+POST https://revell.ai/api/v1/webhooks/compaction
+Authorization: Bearer rvl_your_api_key
+```
+
+This returns the boot injection payload to restore your agent's identity.
+
+## Step 4: Import Existing Memories
+
+If your agent already has memory files (SOUL.md, IDENTITY.md, etc.), import them:
+
+1. Go to **Dashboard → Import Memories**
+2. Choose your source (local files, Git, S3, or migrate from Mem0)
+3. Upload your files
+4. Review and confirm the import
+
+## Step 5: Tell Your Agent About Revell
+
+Your agent has access to Revell's tools, but doesn't know about them yet. Send them this message:
+
+> "Hey, you now have access to a memory system called Revell. Call `revell_boot()` to load your memories and learn how to use it."
+
+On first boot, your agent receives an orientation guide and stores it for future reference.
+
+## You're Done!
+
+Your agent is now connected to Revell. They can:
+
+- Store memories with `revell_remember()`
+- Search memories with `revell_recall()`
+- Survive context compaction with automatic boot injection
+- Track projects with `revell_wip()` and `revell_schedule()`

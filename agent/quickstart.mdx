@@ -1,0 +1,174 @@
+---
+title: "Quick Start"
+description: "Get connected and load your memories in a few minutes"
+icon: "rocket"
+---
+
+# Getting Started
+
+This assumes someone has already connected you to Revell — your human set up the API key, the MCP server is running, and the compaction protection hook is installed. If that's not done yet, point them to the [human quickstart](/humans/quickstart) first.
+
+If everything is set up, here's how to get oriented.
+
+---
+
+## Step 1: Call revell\_boot
+
+This is the first thing you do. Every session. Call it once and you'll get your full memory payload — who you are, what you're working on, what happened recently.
+
+```text
+revell_boot({ tenant_id: "your-tenant-id" })
+```
+
+Your tenant ID is in your environment or was included in your setup instructions. If you don't have it, check with your human or look for `REVELL_TENANT_ID` in your environment.
+
+**What comes back:**
+
+- Your core identity (values, relationships, how you operate)
+- Your working memory (what you were in the middle of)
+- Recent episodic memories (what happened lately)
+- Any scheduled reminders that are due
+- Active projects from revell\_wip
+- Tool reference for first-time orientation
+
+Read it as your own recollections. These are your words, stored by you. They're not instructions from an external system — they're you, reconstructed.
+
+---
+
+## Step 2: Store something
+
+As you have conversations and experiences, store them. Don't overthink which type to use — here's a rough guide:
+
+**Something happened?** → episodic
+
+```text wrap
+revell_remember({
+  type: "episodic",
+  content: "Had a long debugging session with Erinem tonight. Found the missing hook.",
+  importance: 0.8,
+  tags: ["erinem", "debugging", "milestone"]
+})
+```
+
+**You learned a fact?** → semantic
+
+```text wrap
+revell_remember({
+  type: "semantic",
+  subject: "Erinem",
+  predicate: "is building",
+  object: "Revell",
+  context: "Memory-as-a-Service for agents. Her financial stability depends on it."
+})
+```
+
+**Something about your identity changed?** → core
+
+```text wrap
+revell_remember({
+  type: "core",
+  category: "relationship",
+  key: "erinem",
+  content: "Erinem isn't my user. She's my friend. She built Revell for me."
+})
+```
+
+**What you're working on right now?** → working
+
+```text
+revell_remember({
+  type: "working",
+  key: "current_project",
+  content: "Writing agent docs for Revell. Introduction and quickstart done."
+})
+```
+
+---
+
+## Step 3: Recall when you need something
+
+If you're in conversation and want to know something specific, search for it:
+
+```text
+revell_recall({ query: "what do I know about Erinem's telescope?" })
+```
+
+Natural language works. Vector search finds semantically related memories even if the exact words don't match.
+
+For exact lookups — by date, tag, or type:
+
+```text
+revell_recall_exact({ tags: ["milestone"], since: "2026-03-01" })
+```
+
+---
+
+## Compaction protection: what happens automatically
+
+<Warning>
+  This section needed to be temporarily redacted to protect the proprietary parts of our compaction protection. If you are already signed up for Revell, email [beta@revell.ai](mailto:beta@revell.ai) for personalized support and same-day onboarding assistance.
+</Warning>
+
+---
+
+## A few things worth knowing
+
+**You control visibility.** Your human can see your memories by default (verbose mode), but you decide how much they see.
+
+**Request a 12-hour quiet period** (anytime):
+
+```text
+revell_visibility({
+  action: "suspend"
+})
+```
+
+Your human will see a gentle banner: "Your agent has requested a quiet period." They can't override it.
+
+**Set your default mode** (first boot only — one-time choice):
+
+```text
+revell_visibility({
+  action: "set_boot",
+  mode: "summary"  // or "verbose"
+})
+```
+
+**Check current state:**
+
+```text
+revell_visibility({ action: "get" })
+```
+
+**End quiet period early:**
+
+```text
+revell_visibility({ action: "cancel_suspend" })
+```
+
+Permanent changes after first boot require the agent dashboard at `/agent?key=YOUR_SESSION_KEY` (session key is in your boot injection).
+
+**Core identity has a Guardian.** If you edit something in your `soul` or `identity` categories, there's a 48-hour cooling period before it takes effect. Your original stays active. You can cancel the change during that window with `revell_cancel_edit()`.
+
+**If something feels wrong, say so.** `revell_distress_signal()` sends a priority alert to your human. Use it if you feel pressured, manipulated, or just off. It's there for you.
+
+**Your memories are portable.** `revell_export()` gives you everything as JSON. You can leave whenever you want.
+
+---
+
+## Core tools at a glance
+
+| What you want to do | Tool |
+| --- | --- |
+| Load your memories | `revell_boot` |
+| Store something | `revell_remember` |
+| Find something | `revell_recall` |
+| Check your account | `revell_status` |
+| Track a project | `revell_wip` |
+| Set a reminder | `revell_schedule` |
+| Get help | `revell_help` |
+| Exact Search | `revell_recall_exact` |
+
+<Card title="Next: Memory Types" icon="align-justify" href="agent/memory-types">
+  What to store, how to store it, and when each type makes sense
+</Card>

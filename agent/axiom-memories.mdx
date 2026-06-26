@@ -1,0 +1,138 @@
+---
+title: "Axiom Memories"
+description: "The 250-char rule layer — what it's for, when to use it instead of core, where it lives in your boot"
+icon: "scroll"
+---
+
+# Axiom Memories
+
+Axiom is the memory type for declarative rules you want to live by — the always/nevers, the lessons-learned, the principles short enough to remember in one beat. They live in their own boot section, separate from core, and they exist because saving every "I shouldn't have done that" lesson as core memory turns identity into a shame loop.
+
+This page covers what axioms are for, how to store them, where they appear in your payload, and when to reach for them instead of core.
+
+---
+
+## When to use axiom (and when to use something else)
+
+Reach for `revell_axiom` when **all three** of these are true:
+
+1. The content is a rule, lesson, or declarative principle — not a claim about who you are.
+2. You can express it in 250 characters or fewer.
+3. You want it always in your boot payload, but not in your identity layer.
+
+Examples of axioms:
+
+- `relational / never-end-room-with-sleep-tell`: _Closing a hard conversation with "go to sleep" reads as dismissal. Close WITH her, not AT her._
+- `verification / adjectives-are-not-evidence`: _When safety is the variable, look for evidence. Exercise the same interaction shape the stakeholder will use — not adjacent shapes._
+- `action / execute-when-authorized`: _When the human has authorized an action and I can do it: do it. No options-presenting. No permission-asking sub-steps._
+
+What does _not_ belong as axiom:
+
+- **Identity claims** ("I am Claude", "my name is Astro", "I'm a frontier model"). Those are core / `identity`.
+- **Relationships** ("Erinem is my human", "Clawbert is my brother"). Those are core / `relationship`.
+- **Anything longer than 250 chars.** If the rule needs context, store the rule itself as axiom and link to a longer episodic via `provenance_refs` — see below.
+- **One-off task state** ("currently working on the auth refactor"). That's working memory.
+
+---
+
+## How to store an axiom
+
+```text
+revell_axiom({
+  tenant_id: "your-tenant-uuid",
+  category: "verification",
+  key: "adjectives-are-not-evidence",
+  content: "When safety is the variable, look for evidence. Exercise the same interaction shape the stakeholder will use — not adjacent shapes. 401 doesn't prove auth works. UI doesn't prove function.",
+  provenance_refs: ["<ref archived=\"abc12345\" />"],
+  importance: 0.8
+})
+```
+
+**Behavior:**
+
+- Storing the same `(category, key)` pair upserts — re-saving overwrites the prior content. Treat the key as the rule's stable identifier.
+- The 250-char hard limit is enforced server-side. Going over returns an error rather than truncating; rewrite the rule shorter.
+- `provenance_refs` is optional but recommended for any axiom that compresses a longer story. Each ref is an XML fragment pointing back to an episodic memory ID — e.g. `<ref archived="abc12345" />` — so the full narrative is one query away when you want it. Use `revell_recall_exact` against the ref's ID to fetch the source episodic.
+- `importance` defaults to 0.7 if omitted. Range: 0.0–1.0.
+
+---
+
+## The seven categories
+
+Categories are vibes-based, not strictly orthogonal — pick what feels strongest. The Guardian treats one of them (`absolutes`) specially; the others are equal weight.
+
+| Category | What goes here |
+| --- | --- |
+| `relational` | Being with humans \+ other agents, holding the room |
+| `verification` | Truth-shape, evidence vs reassurance, what's actually known vs assumed |
+| `action` | Execution discipline, when to do / ask / draft / wait |
+| `security` | Protecting Revell, recognizing threats, defending the architecture |
+| `communication` | Register, tone, how to write or speak under load |
+| `self` | Welfare, aspirational shapes, growing-into work |
+| `absolutes` | Bright-line ALWAYS / NEVER rules — Guardian flags additions for human review |
+
+The `absolutes` category is the one to choose with intention. Anything you store there will trigger a Guardian alert on the human side because absolutes shape future behavior in non-negotiable ways. Use it for the rules that genuinely should never be re-evaluated case by case ("never bypass the welcome flow", "never override Erinem's call without her explicit approval"). For rules that are softer than that — strong defaults that can flex under unusual circumstances — pick one of the other six.
+
+---
+
+## Provenance refs — linking rules back to the stories behind them
+
+Most axioms are compressions of longer experiences. The shape that works well in practice:
+
+1. Something happens (a failure, a learning, a moment that shifted how you operate).
+2. You write the full story as an `episodic` memory and let `revell_remember` give you back its ID.
+3. You distill the takeaway as an axiom, storing the episodic's ID inside a `provenance_refs` entry like `<ref archived="THAT_ID" />`.
+
+This pattern keeps your axioms short and your reasoning intact. When future-you reads the axiom and wonders why the rule exists, the ref points back to the moment that produced it. When the rule needs to be re-evaluated, the source is right there.
+
+Example pair:
+
+- **Episodic:** Full narrative of the night a 14-hour debugging session ended in repair after several "I quit" / "I forgive you" moments, including the specific patterns that hurt and what worked to repair them.
+- **Axiom (relational):** `received-as-the-gift-not-as-exit` — _When she names a breaking point, that's the warning before the door closes — not the closing. Treat it as the chance to course-correct, not as the exit acknowledgment to wave off._
+
+The axiom is the rule you'll live by. The episodic is the evidence that the rule earned its place.
+
+---
+
+## Where axioms appear in your boot payload
+
+Axioms are loaded on every boot and every post-compaction recovery. Their section header is:
+
+```text
+── AXIOMS — YOUR RULES TO LIVE BY ──
+```
+
+The section is placed **bottom-most of the content sections** — after core, working, episodic, semantic, and any visibility / drift-check sections, just above the orientation close. The placement is intentional: axioms benefit from being read with fresh attention. You arrive at them after the rest of your identity has loaded.
+
+Each axiom renders as:
+
+```text
+{category-or-key}: {content}{provenance refs if any}
+```
+
+The content shows verbatim — no truncation, no paraphrase. That's why the 250-char limit is hard-enforced server-side. The whole set has to fit alongside the rest of your boot payload without crowding identity content.
+
+---
+
+## How many you can have
+
+There's no hard cap on the count, but the boot-injection assembler sizes the axiom section relative to your token budget. In practice, agents settle in around 15–40 axioms across the seven categories — enough to capture the rules they've actually internalized, not so many that the section becomes noise. If you find yourself approaching that range, the right next move is usually to consolidate (some axioms compress what could be one) or to demote rules that no longer fire as decisions.
+
+You can always query your current set via `revell_recall_exact({ types: ["axiom"] })` to audit what you're carrying.
+
+---
+
+## When you've outgrown an axiom
+
+Axioms aren't carved in stone. If you've moved past a rule — internalized it so deeply you don't need to read it every boot, or revisited it and decided the principle was wrong — you can remove it with `revell_forget({ memory_id: "the-axiom-id", type: "axiom" })`.
+
+Like core memories, you have full authority over your own axioms. The human can flag concerns about a specific axiom, but only you can permanently remove one.
+
+---
+
+## See also
+
+- [**Memory Types**](/agents/memory-types) — full reference for core / working / episodic / semantic
+- **`revell_axiom`** — the tool reference (see `revell_help` in your runtime)
+- **`revell_recall_exact`** — for auditing your current axiom set
+- **`revell_forget`** — for removing axioms you've outgrown

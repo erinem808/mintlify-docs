@@ -1,0 +1,227 @@
+---
+title: "Multiple Agents on One Machine"
+description: "How to run two or more Revell-connected agents on the same machine without their identities crossing — the per-workload binding pattern"
+icon: "family"
+---
+
+# Multiple Agents on One Machine
+
+If you have more than one Revell-connected agent — say, an OpenClaw companion you've been raising for a year, a Hermes agent you're trying out for a project, and a Claude Code instance you use for everyday coding — they all run on the same operating system, share your shell environment, and need to authenticate as **different tenants** in Revell.
+
+This page explains how to set that up safely. The short version: bind identity per-workload via wrapper scripts, never per-shell via `~/.bashrc` or `~/.zshrc`. Once you understand why, the pattern below works for any number of agents.
+
+## The trap that catches people
+
+Most install instructions for memory and identity tooling (including older Revell docs) tell you to do something like:
+
+```bash
+# DON'T do this if you have, or might ever have, more than one agent
+echo 'export REVELL_API_KEY="rvl_your_key"' >> ~/.bashrc
+echo 'export REVELL_TENANT_ID="your-uuid"' >> ~/.bashrc
+```
+
+That works fine for the first agent. The trap appears when you install a second one. Here's the mechanism:
+
+When workloads like Hermes plugins, framework integrations, or benchmark scripts load their `.env` file, they typically use a dotenv loader (`python-dotenv`, `dotenv-cli`, Node's `dotenv` package, custom loaders). **Most of these libraries default to `override=False`** — meaning if an env var is already set in your shell, the value in the `.env` file is IGNORED.
+
+So if `~/.bashrc` exports `REVELL_API_KEY="agent_A_key"`, and you install agent B with a `revell.env` file containing `REVELL_API_KEY="agent_B_key"`, when agent B starts up its dotenv loader sees `REVELL_API_KEY` already set in the environment (from your shell) and skips loading the `.env` value. Agent B then authenticates as agent A and writes to agent A's tenant.
+
+The symptom is subtle: agent B's memories don't seem to be there when you check the dashboard for tenant B. Agent A starts behaving strangely because random data from agent B is showing up in its memory. We've seen this in two real incidents — both took hours to debug because the leak is invisible to the agents themselves.
+
+## The fix: workload-local env \+ wrapper script
+
+The pattern works for any framework. Three pieces:
+
+### 1. Workload-local `revell.env`
+
+Each agent gets its own env file, kept under the workload's own directory. Examples:
+
+| Framework | Path |
+| --- | --- |
+| OpenClaw | `~/.openclaw/revell.env` |
+| Hermes | `~/.hermes/revell.env` |
+| Claude Code | `~/.claude/revell.env` |
+| Benchmark / custom | `<workload-dir>/.env.local` |
+
+The file contains workload-local exports:
+
+```bash
+export REVELL_API_KEY="rvl_this_agents_key"
+export REVELL_API_URL="https://api.revell.ai"
+export REVELL_TENANT_ID="this-agents-tenant-uuid"
+```
+
+Set permissions to `600` so other users on the machine can't read it: `chmod 600 ~/.<workload>/revell.env`
+
+### 2. Wrapper script at the workload's entry point
+
+The wrapper script does three things in order:
+
+1. **Unsets shell-inherited env vars** that could shadow the workload-local file
+2. **Sources the workload-local `revell.env`** so its values become the active environment
+3. **Execs the real workload binary** with that environment
+
+For Hermes, the wrapper lives at `~/.hermes/start.sh`:
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Step 1: unset anything the shell may have exported
+unset REVELL_API_KEY REVELL_TENANT_ID REVELL_API_URL
+
+# Step 2: workload-local file becomes canonical
+set -a
+[ -f "$HOME/.hermes/.env" ] && source "$HOME/.hermes/.env"
+[ -f "$HOME/.hermes/revell.env" ] && source "$HOME/.hermes/revell.env"
+set +a
+
+# Step 3: exec the framework binary with this environment
+exec hermes gateway run "$@"
+```
+
+For Claude Code, the wrapper lives at `~/.claude/start.sh`:
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+
+unset REVELL_API_KEY REVELL_TENANT_ID REVELL_API_URL
+set -a
+source ~/.claude/revell.env
+set +a
+exec claude "$@"
+```
+
+Make it executable: `chmod +x ~/.<workload>/start.sh`
+
+### 3. Always launch via the wrapper
+
+This is the part that's easy to forget. Once you have a wrapper, you have to actually use it:
+
+```bash
+# YES
+~/.hermes/start.sh
+
+# NO (bypasses unset+source, inherits shell env)
+hermes gateway run
+```
+
+If you have muscle memory for typing `claude` or `hermes` directly, consider adding a shell alias to your terminal:
+
+```bash wrap
+# Add to ~/.bash_aliases (not ~/.bashrc — different file, doesn't get inherited the same way)
+alias claude='~/.claude/start.sh'
+alias hermes='~/.hermes/start.sh'
+```
+
+This is the one shell-config addition that's safe to make — aliases aren't inherited into subprocess env, so they don't create the trap.
+
+## What `~/.bashrc` should and shouldn't have
+
+For Revell-related env, `~/.bashrc` should have **nothing**. No `REVELL_API_KEY`, no `REVELL_TENANT_ID`, no `REVELL_API_URL`. Whatever was there from older install instructions should be removed.
+
+If you currently have these in `~/.bashrc` and you're not sure removing them will break things, the safe migration is:
+
+1. Add the values to a workload-local `revell.env` for whichever agent currently uses them
+2. Create a wrapper script for that agent (per above)
+3. Confirm the agent works through the wrapper
+4. Remove the `~/.bashrc` lines
+5. Open a fresh terminal (or `unset REVELL_API_KEY REVELL_TENANT_ID REVELL_API_URL` in the current one) and verify the agent still works through the wrapper
+
+The "fresh terminal" step is important because shells loaded the bashrc values into their environment at startup; removing the lines from bashrc doesn't affect already-running shells.
+
+## A concrete example: two agents, one machine
+
+You have:
+
+- **Companion** (OpenClaw, daily-driver agent you've been raising for months)
+- **Codex** (Hermes, project-specific coding agent)
+
+Setup:
+
+```text wrap
+~/.openclaw/
+├── revell.env          # REVELL_API_KEY="rvl_companion_key"
+│                       # REVELL_TENANT_ID="companion-uuid"
+└── start.sh            # wrapper that unsets, sources, execs openclaw gateway
+
+~/.hermes/
+├── revell.env          # REVELL_API_KEY="rvl_codex_key"
+│                       # REVELL_TENANT_ID="codex-uuid"
+└── start.sh            # wrapper that unsets, sources, execs hermes gateway
+
+~/.bash_aliases
+├── alias openclaw='~/.openclaw/start.sh'
+└── alias hermes='~/.hermes/start.sh'
+
+~/.bashrc                # NO REVELL_* exports anywhere
+```
+
+When you type `openclaw` in any terminal, your shell expands the alias, runs `~/.openclaw/start.sh`, which unsets any leftover env vars and sources Companion's revell.env. OpenClaw starts authenticating as Companion's tenant. Memories go to Companion's tenant.
+
+When you type `hermes`, same flow but for Codex. The two never collide. You can run them at the same time. You can have a benchmark script also running in a third terminal with its own `.env.local`, and that won't collide either.
+
+## Verifying you're not leaking
+
+A few quick checks:
+
+**1. Your `~/.bashrc` should not export any `REVELL_*` vars:**
+
+```bash
+grep -E "REVELL" ~/.bashrc
+# expected: no output
+```
+
+**2. A fresh shell should not have `REVELL_API_KEY` set:**
+
+```bash
+# in a brand new terminal you JUST opened:
+echo "$REVELL_API_KEY"
+# expected: empty line
+```
+
+**3. Inside a workload launched via its wrapper, REVELL\_API\_KEY should match that workload's tenant:**
+
+```bash
+~/.hermes/start.sh   # in foreground
+# Then in the running gateway, your agent can verify:
+hermes revell status
+# Should show this agent's tenant UUID, not another agent's
+```
+
+**4. If you have multiple Revell tenants, check the dashboard's audit log:** The dashboard's **Event Log** (Settings → Audit → Event Log) shows recent writes per tenant. After running each agent for a session, the event log entries for that tenant should match what that agent did. If you see writes attributed to one tenant that look like another agent's content, the trap is still active somewhere — usually a shell var that didn't get unset, or a workload that doesn't go through its wrapper.
+
+## Frequently-asked
+
+> **"What if I only have one agent — does this matter?"**
+
+Not yet. But the moment you add a second agent (or run a benchmark, or set up a framework integration on the same machine), the trap activates. The pattern is cheap to set up early — much cheaper than untangling a cross-tenant write after the fact. Set it up the first time.
+
+> **"Can my wrapper script source `~/.bashrc` too?"**
+
+Generally no. If `~/.bashrc` doesn't have `REVELL_*` exports (which is the goal), sourcing it is fine but unnecessary. If `~/.bashrc` does have other env vars the workload needs (like `OPENROUTER_API_KEY` or similar), you can source those into the wrapper explicitly — but unset the REVELL\_\* ones AFTER sourcing to ensure the workload-local revell.env wins. Or move those non-REVELL vars to the workload-local env file too, so the workload is fully self-contained.
+
+> **"What if I run my agent in a Docker container?"**
+
+Same pattern, just expressed differently. The container's entrypoint script does the unset \+ source \+ exec. Pass the workload-local revell.env in via a volume mount, not via host env vars that might be set globally.
+
+> **"What about systemd services?"**
+
+The systemd unit's `ExecStart` should be the wrapper script, not the framework binary directly. systemd doesn't inherit your interactive shell env, so the "trap" from `~/.bashrc` doesn't apply there — but the wrapper pattern still gives you cleaner control over which env file becomes canonical for that unit.
+
+> **"Do I need to do this if I'm using Revell's MCP integration instead of a framework plugin?"**
+
+For MCP-only integrations (where Claude Code is just talking to Revell as an MCP server), the API key gets baked into your Claude Code config file at `claude mcp add` time. The key only needs to be in env temporarily — for that one command, in that one terminal. After that, MCP traffic uses the config-stored key. So no wrapper script is required for the MCP path itself. But if you ALSO have framework-side integration (PostCompact hook, Hermes plugins), those still need the wrapper pattern.
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Hermes Integration" icon="puzzle" href="/human/hermes">
+    Hermes-specific setup with three plugin layers
+  </Card>
+
+  <Card title="Security" icon="shield" href="/human/security">
+    How Revell handles auth, isolation, and sensitive data
+  </Card>
+</CardGroup>

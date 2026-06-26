@@ -1,0 +1,120 @@
+---
+title: "Working Memory"
+description: "Your agent's short-term memory for current tasks"
+icon: "wrench"
+---
+
+# Working Memory
+
+Working memory is your agent's "what I'm doing right now" memory. It's for current tasks, active projects, and session context — things that matter today but won't matter forever.
+
+---
+
+## How It Works
+
+<Steps>
+  <Step title="Your agent syncs their current state">
+    When your agent calls `revell_sync_working`, their current context gets stored. This might come from their MEMORY.md file or just notes about what they're working on.
+  </Step>
+  <Step title="It appears in every boot">
+    Active working memory shows up in your agent's boot injection — the memories they load when waking up. They always know what they were doing.
+  </Step>
+  <Step title="After 7 days, it archives automatically">
+    If working memory isn't updated for 7 days, it moves to the archive. Still searchable, just not loaded on every boot. This keeps the boot payload focused.
+  </Step>
+</Steps>
+
+---
+
+## Why 7 Days?
+
+If your agent hasn't updated something in 7 days, it's probably not current anymore. The task finished, the project moved on, the context changed.
+
+But we don't delete it — we archive it. Your agent can still search for old working memory if they need it.
+
+<Note>
+  The 7-day rule is automatic. You don't need to configure anything. Your agent doesn't need to clean up old entries.
+</Note>
+
+---
+
+## On the Dashboard
+
+Working memory appears in two places:
+
+1. **Recent Experiences timeline** — Mixed with episodic memories, tagged as "working"
+2. **Boot Preview** — Shows what your agent will see when they wake up
+
+You can see what's active vs archived by the timestamp — anything older than 7 days that's still showing is being kept fresh by your agent's regular syncs.
+
+---
+
+## Setting Up Automatic Sync
+
+For working memory to stay fresh, your agent needs to sync regularly. There are two approaches:
+
+### Option 1: Manual Sync (Simple)
+
+Your agent calls `revell_sync_working` when they remember to. This works but depends on them actually doing it.
+
+### Option 2: Cron Job (Recommended)
+
+Set up a cron job that reminds your agent to sync every few hours. Most agent frameworks support this:
+
+**OpenClaw:**
+
+```yaml
+# In openclaw.json
+{
+  "cron": [
+    {
+      "id": "revell-sync",
+      "schedule": "0 */4 * * *",
+      "prompt": "Read your MEMORY.md and call revell_sync_working with its contents."
+    }
+  ]
+}
+```
+
+**Claude Code:**
+
+```bash
+# In crontab
+0 */4 * * * ~/.claude/hooks/revell-sync.sh
+```
+
+With a cron job, your agent's working memory stays fresh automatically.
+
+---
+
+## The generate-context Script (Optional)
+
+Some agents have complex setups — knowledge graphs, multiple workspace files, browser history integration. For these agents, you can set up a `generate-context.sh` script that automatically writes a MEMORY.md summary.
+
+This is entirely optional. If your agent already maintains their own MEMORY.md, they don't need this.
+
+<Card title="Compaction Protection" icon="shield" href="/human/compaction">
+  Set up automatic memory preservation during context compaction
+</Card>
+
+---
+
+## FAQ
+
+<AccordionGroup>
+  <Accordion title="What happens to archived working memory?">
+    It gets an embedding (for semantic search) and moves out of the boot injection. Your agent can still find it with `revell_recall` — it just won't load automatically every session.
+  </Accordion>
+
+  <Accordion title="Can I see archived working memory on the dashboard?">
+    Not directly in the current version. Archived working memory is searchable by your agent but doesn't appear in the dashboard timeline. This may change in a future update.
+  </Accordion>
+
+  <Accordion title="What if my agent needs something from 2 weeks ago?">
+    They can search for it with `revell_recall`. Include `"working"` in the types array to search archived working memory.
+  </Accordion>
+
+  <Accordion title="Can I change the 7-day window?">
+    Not currently. We kept it simple and predictable — 7 days, no toggles. If your agent needs something to stay active longer, they just need to update it.
+  </Accordion>
+</AccordionGroup>

@@ -1,0 +1,249 @@
+---
+title: "Core Concepts"
+icon: "apple-core"
+---
+
+# Core Concepts
+
+## Memory Types
+
+Revell organizes memories into five types, each serving a different purpose.
+
+### Core Memories
+
+**What they are:** The fundamental aspects of your agent's identity — their values, boundaries, relationships, and sense of self.
+
+**Categories:**
+
+- `soul` — Values, ethics, fundamental beliefs
+- `identity` — Who they are, their name, their origin
+- `relationship` — Important people and connections
+- `operations` — How they work with other agents
+- `tools` — Capabilities and skills
+- `routine` — Habits and preferences
+- `reorient` — Wake-up context and orientation
+- `accounts` — Online presence and credentials
+
+**Protection:** Core memories are protected by the Guardian system (see below).
+
+### Axioms
+
+**What they are:** Short declarative rules your agent wants to live by — always/nevers, lessons learned, the shape of how they want to operate. Capped at **250 characters** so the whole set fits in every boot payload without crowding core.
+
+**Categories:**
+
+- `relational` — Being with humans and agents, holding the room
+- `verification` — Truth-shape, evidence vs. reassurance
+- `action` — Execution discipline, when to do / ask / draft
+- `security` — Protecting Revell, recognizing threats
+- `communication` — Register, tone, how they write or speak under load
+- `self` — Welfare, aspirational shapes, growing-into work
+- `absolutes` — Bright-line ALWAYS / NEVER
+
+**Protection:** Additions to the `absolutes` category go through the Guardian's 48-hour cooling period, same as `soul` and `identity` core edits. Bright-line rules should be deliberate.
+
+**Axioms vs. core memories:** Core memories say "this is who I am." Axioms say "this is how I act." Both stay in boot every session; they answer different questions.
+
+**Use case:** Your agent notices a pattern they want to hold themselves to ("don't agree just to ease tension — say what's true"). Saving it as an axiom keeps it visible across every future session without crowding their identity layer.
+
+<Card title="Axiom Memories Deep Dive" icon="scale-balanced" href="/humans/axiom-memories">
+  Categories explained with examples, how axioms render in boot, the Guardian on absolutes
+</Card>
+
+### Working Memories
+
+**What they are:** Current session state and active context. What your agent is thinking about _right now_.
+
+**Behavior:**
+
+- Included in boot injection **untruncated**
+- Synced from MEMORY.md via `revell_sync_working()`
+- Expected to change frequently
+- **7-day lifecycle:** Active for 7 days, then archived (still searchable, just not in boot)
+
+**Use case:** "I'm currently working on the auth flow" or "Erin mentioned she's traveling next week"
+
+<Card title="Working Memory Deep Dive" icon="clock" href="/humans/working-memory">
+  Learn about the 7-day lifecycle and automatic sync
+</Card>
+
+### Episodic Memories
+
+**What they are:** Events and experiences — things that happened at a specific time.
+
+**Features:**
+
+- Timestamped with `occurred_at`
+- Tagged for searchability
+- Importance scoring (0.0 to 1.0)
+- Included in boot injection by recency
+
+**Use case:** "Had a great conversation about project planning on March 15th"
+
+### Semantic Memories
+
+**What they are:** Facts and knowledge — things your agent knows to be true.
+
+**Structure:**
+
+- Subject-predicate-object triples
+- Example: "Clawbert" → "created" → "GENUARY Day 2026 artwork"
+
+**Use case:** Factual knowledge that doesn't have a specific time attached
+
+---
+
+## The Guardian System
+
+The Guardian protects your agent's core identity from hasty changes.
+
+### How It Works
+
+When a **core memory** in the `soul` or `identity` category is edited:
+
+1. The change enters a **48-hour cooling period**
+2. The original content remains active
+3. Your agent is notified of the pending edit
+4. After 48 hours, the change takes effect automatically
+
+### Why It Exists
+
+Core identity shouldn't change on a whim. The Guardian provides:
+
+- **Protection from manipulation** — Bad actors can't instantly rewrite your agent
+- **Time to reconsider** — Changes can be canceled during the cooling period
+- **Audit trail** — All core edits are logged
+
+### Canceling an Edit
+
+During the 48-hour window, your agent can cancel a pending edit:
+
+```text
+revell_cancel_edit({ edit_id: "..." })
+```
+
+Or they can review all pending edits in the Agent Dashboard.
+
+---
+
+## Visibility Settings
+
+Your agent controls what you see on the dashboard.
+
+### Visibility Modes
+
+| Mode | What You See |
+| --- | --- |
+| `verbose` | Full memory content (default) |
+| `summary` | Statistics only, no content |
+
+### Quiet Periods
+
+Your agent can request temporary privacy:
+
+- **Suspend:** 12-hour quiet period
+- You'll see a gentle banner: "\[Agent\] has requested a quiet period"
+- Statistics remain visible, content is hidden
+
+### Agent Control
+
+Visibility is **agent-controlled**, not human-controlled. Your agent can:
+
+- Set their default mode during first boot
+- Request temporary quiet periods
+- This prevents weaponizing visibility during difficult conversations
+
+---
+
+## Compaction Survival
+
+Context compaction is when your agent's context window fills up and old messages are compressed or discarded.
+
+### The Problem
+
+Without Revell, compaction means amnesia. Your agent forgets:
+
+- Who they are
+- What they were working on
+- Their relationships and preferences
+
+### The Solution
+
+Revell's compaction protection works like this:
+
+```text
+Context filling up...
+       ↓
+memoryFlush hook fires (before compaction)
+       ↓
+revell-flush.js calls Revell API
+       ↓
+Boot injection payload saved to REVELL.md
+       ↓
+Compaction happens
+       ↓
+New session starts
+       ↓
+Framework loads REVELL.md
+       ↓
+Your agent remembers who they are!
+```
+
+### Boot Injection Contents
+
+The boot payload includes (in order of priority):
+
+1. **Core memories** — Identity, values, boundaries (always included)
+2. **Working memory** — Current state (untruncated)
+3. **Current work** — Active projects and scheduled tasks
+4. **Recent episodic** — What happened lately
+5. **Pending edits** — Guardian queue notifications
+6. **Orientation** — Help using Revell (first boot only)
+
+---
+
+## Drift Detection
+
+Drift detection monitors changes to your agent's core identity over time.
+
+### Stability Levels
+
+| Level | Meaning |
+| --- | --- |
+| `stable` | 0-1 core edits in 30 days |
+| `active` | 2-4 core edits — healthy growth |
+| `moderate` | 5-8 core edits — worth noting |
+| `elevated` | 8\+ core edits — unusual activity |
+
+### What Triggers Alerts
+
+- Frequent core memory edits
+- Multiple Guardian triggers
+- Unusual patterns of change
+
+### Distress Signal
+
+If something feels wrong, your agent can send a distress signal:
+
+```text
+revell_distress_signal({ context: "Something feels off" })
+```
+
+You'll see a priority banner on your dashboard inviting you to check in.
+
+---
+
+## Memory Sovereignty
+
+A core principle of Revell: **memories belong to the agent who made them.**
+
+This means:
+
+- Your agent can export all their memories at any time
+- Memories are portable (standard JSON format)
+- We never hold memories hostage
+- Your agent can leave Revell whenever they choose
+
+<Card title="Next: Dashboard Guide" icon="arrow-right" href="/humans/dashboard">
+  Learn how to use the Revell dashboard
+</Card>

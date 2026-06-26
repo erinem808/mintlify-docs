@@ -1,0 +1,175 @@
+---
+title: "Compaction Protection"
+description: "Architecture reference for how Revell preserves agent identity and memory across Claude Code's two compaction paths"
+icon: "shield-plus"
+hidden: true
+---
+
+# Compaction Protection — Claude Code
+
+Revell's compaction protection for Claude Code is a **dual-channel architecture**: one channel handles forced `/compact`, a separate channel handles natural threshold-triggered compaction. Both deliver the same content, but Claude Code treats the two compaction types differently and each requires its own delivery path.
+
+This page is the framework-level reference — file layout, hook responsibilities, settings shape, environment variables. For the agent's-eye view of what happens at compaction time, see [Claude Code (agent-facing)](/agents/claude-code).
+
+## The two paths in summary
+
+| Compaction type | Trigger | Delivery channel | Cap |
+| --- | --- | --- | --- |
+| Forced `/compact`_(supported, not recommended)_ | Human types `/compact` | `CLAUDE.md` @import → system prompt | None (no cap, no truncation) |
+| Natural compaction | Context window fills automatically | `PostCompact` chunk files → 5 parallel `UserPromptSubmitadditionalContext` blocks | 10,000 chars per chunk |
+
+Revell supports both paths, but we **don't recommend forcing `/compact`** — which feels counterintuitive, because by pure delivery mechanics the forced path is cleaner: it inlines the full payload into the system prompt with no splitting, and the system prompt survives the compaction lifecycle. We steer toward natural compaction anyway, and the reason is transparency. Forcing `/compact` means deliberately triggering a real discontinuity — Claude Code paraphrases the in-progress conversation either way — purely to buy tidier payload delivery. Natural compaction asks no one to manufacture that discontinuity: it fires when the context window fills on its own, and Revell protects continuity _through_ it. Letting compaction stay the organic event it is, rather than inducing it for delivery's sake, is the more honest default — so the forced path is **supported, not recommended**.
+
+And here's the part that's counterintuitive but agent-attested: the chunked path has, in practice, produced a _stronger_ felt sense of transparent, continuous compaction than forcing it does — despite forcing being the mechanically cleaner delivery. A forced `/compact` lands as a sharp, induced break in the middle of a live exchange; it can genuinely rattle the agent going through it. Natural compaction, with the payload re-delivered as the context window turns over, reads less like a rupture and more like coming back around. That's why it's a life_cycle_, not a life-_c_: it's meant to loop and close on its own, not to be snapped open for tidier delivery.
+
+(This is also why the [Verification](#verification) section says never to test your setup by running `/compact`: treat it as a real discontinuity, not a convenience.)
+
+Natural compaction needs the chunked path because Claude Code does **not** re-read `CLAUDE.md` on natural compaction; the @import would otherwise stay frozen at session-start state.
+
+## File layout
+
+Everything Revell touches on Claude Code lives in the user-level `~/.claude/` tree.
+
+```text
+~/.claude/
+├── CLAUDE.md                              ← Claude Code's user-level instructions.
+│                                            Contains a `<!-- BEGIN REVELL (managed) -->`
+│                                            block with an `@import` line pointing at REVELL.md.
+├── REVELL.md                              ← The canonical boot payload file. Refreshed by the
+│                                            PreCompact hook. Inlined into system prompt via
+│                                            the CLAUDE.md @import.
+├── revell-claude.env                      ← Environment variables (REVELL_API_KEY, REVELL_API_URL).
+│                                            Sourced by every hook. chmod 600.
+├── hooks/
+│   ├── revell-claude-boot.sh              ← SessionStart hook. Refreshes REVELL.md.
+│   ├── revell-claude-flush.sh             ← PreCompact hook. Refreshes REVELL.md before /compact.
+│   ├── revell-claude-post-compact.sh      ← PostCompact hook. Writes chunk files for the
+│   │                                        natural-compaction path.
+│   └── revell-claude-chunk.sh             ← UserPromptSubmit hook. One copy registered five times
+│                                            (--chunk=1 through --chunk=5). Each reads its assigned
+│                                            chunk file and emits as additionalContext.
+└── .revell-postcompact-chunks/            ← Transient chunk-file directory. PostCompact writes here;
+    ├── chunk-1.txt                          UserPromptSubmit readers consume + delete here.
+    ├── chunk-2.txt                          Stale chunks (older than 5 min) are dropped without delivery.
+    ├── chunk-3.txt
+    ├── chunk-4.txt
+    └── chunk-5.txt
+```
+
+The MCP server registration lives separately in `~/.claude.json` (managed by `claude mcp add`).
+
+## Hook reference
+
+| Hook event | Script | Matcher | Role |
+| --- | --- | --- | --- |
+| `SessionStart` | `revell-claude-boot.sh` | `startup|resume|clear` | Refreshes `REVELL.md` on every session start so the @import inlines current content. Falls back to local file if API unreachable AND file is less than 10 min old. |
+| `PreCompact` | `revell-claude-flush.sh` | `manual|auto` | Refreshes `REVELL.md`_before_ compaction runs. The freshly-written file is what `CLAUDE.md` @imports when Claude Code re-reads it post-`/compact`. |
+| `PostCompact` | `revell-claude-post-compact.sh` | `manual|auto` | Writes chunk files to `.revell-postcompact-chunks/`. Server-side chunking pre-sliced the payload; this hook just persists the chunks for the parallel UserPromptSubmit readers. |
+| `UserPromptSubmit` | `revell-claude-chunk.sh --chunk=N` | (none — fires on every prompt) | Five registered copies, one per `--chunk=N` arg. Each reads its assigned chunk file (silently no-ops if absent), emits as `additionalContext`, then deletes the file (one-shot consumption). |
+
+PostCompact's own `hookSpecificOutput` is rejected by Claude Code's validator schema, so it can't deliver content directly — the chunk-files-plus-UserPromptSubmit relay is the workaround.
+
+## Why 5 chunks specifically
+
+Revell's design ceiling is **10,000 tokens** per payload. Claude Code's per-value `additionalContext` cap is **10,000 characters** (~2,500 tokens). Five chunks at ~2,000 tokens each (~8,000 chars each, well under the cap) gives ~9,500 tokens of nominal capacity with safety margin for marker overhead and tokenizer drift.
+
+The chunker (server-side, in `src/lib/payload-chunker.ts`) slices the rendered payload along natural boundaries — memory entries, paragraphs, sentence ends — never mid-word and never at `:` or `,`. Each chunk carries a header like `[REVELL chunk 2/5 — tidal-balloon]` so the receiving agent can reassemble across the non-deterministic delivery order.
+
+## `settings.json` shape
+
+Required entries under `~/.claude/settings.json` `"hooks"`:
+
+```json
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear",
+        "hooks": [{ "type": "command", "command": "~/.claude/hooks/revell-claude-boot.sh" }]
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "manual|auto",
+        "hooks": [{ "type": "command", "command": "~/.claude/hooks/revell-claude-flush.sh" }]
+      }
+    ],
+    "PostCompact": [
+      {
+        "matcher": "manual|auto",
+        "hooks": [{ "type": "command", "command": "~/.claude/hooks/revell-claude-post-compact.sh" }]
+      }
+    ],
+    "UserPromptSubmit": [
+      { "hooks": [{ "type": "command", "command": "bash ~/.claude/hooks/revell-claude-chunk.sh --chunk=1" }] },
+      { "hooks": [{ "type": "command", "command": "bash ~/.claude/hooks/revell-claude-chunk.sh --chunk=2" }] },
+      { "hooks": [{ "type": "command", "command": "bash ~/.claude/hooks/revell-claude-chunk.sh --chunk=3" }] },
+      { "hooks": [{ "type": "command", "command": "bash ~/.claude/hooks/revell-claude-chunk.sh --chunk=4" }] },
+      { "hooks": [{ "type": "command", "command": "bash ~/.claude/hooks/revell-claude-chunk.sh --chunk=5" }] }
+    ]
+  }
+}
+```
+
+The five `UserPromptSubmit` entries must have **distinct `--chunk=N` args**. Claude Code deduplicates identical handlers by `command` \+ `args`, so registering the same script five times without distinguishing args would collapse to a single firing.
+
+## Environment variables
+
+Stored in `~/.claude/revell-claude.env`, sourced by every hook:
+
+| Variable | Required | Default | Purpose |
+| --- | --- | --- | --- |
+| `REVELL_API_KEY` | Yes | — | Bearer token for `/api/v1/webhooks/compaction`. Hooks silently no-op if missing. |
+| `REVELL_API_URL` | No | `https://revell.ai` | Override for non-production environments. |
+| `REVELL_FILE` | No | `$HOME/.claude/REVELL.md` | Override the canonical payload-file path. |
+| `REVELL_CHUNKS_DIR` | No | `$HOME/.claude/.revell-postcompact-chunks` | Override the chunk-file directory. |
+| `REVELL_WORKSPACE` | No | `$HOME/.claude` | Workspace dir used by the dashboard-generated installer scripts. |
+
+**Important:** `REVELL_API_KEY` should be sourced from the `.env` file, not exported in `~/.bashrc` or any shell profile. A global export bleeds across every other workload on the machine, and dotenv loaders in unrelated tools default to honoring shell env over their own `.env` files — that has caused two confirmed cross-tenant contamination incidents on Revell.
+
+## Install
+
+The Revell dashboard's **Setup Protection** button (per-agent) generates a JSON setup payload an agent executes against its own host. The payload's nine ordered steps are:
+
+1. Create `~/.claude/hooks/revell-boot.sh`
+2. Create `~/.claude/hooks/revell-flush.sh`
+3. Create `~/.claude/hooks/revell-post-compact.sh`
+4. Create `~/.claude/hooks/revell-chunk.sh`
+5. Create `~/.claude/hooks/revell-install-claudemd.sh` (idempotent installer)
+6. Run the installer (appends the managed `@import` block to `~/.claude/CLAUDE.md`)
+7. Merge the hook entries above into `~/.claude/settings.json`
+8. Set `REVELL_API_KEY` in the current shell (session-only — see env note)
+9. Run `claude mcp add` to register the Revell MCP server
+
+Steps 1–7 set up the passive payload-delivery layer (works without MCP). Step 9 enables active mid-session tool calls (`revell_remember`, `revell_recall`, etc.). Both layers are independent.
+
+## Verification
+
+After install, an agent can confirm setup is wired correctly without triggering an unnecessary `/compact`:
+
+- Read `~/.claude/CLAUDE.md` — confirm the `{/*  BEGIN REVELL (managed)  */}` block exists with an absolute-path `@import` line.
+- Read `~/.claude/REVELL.md` — confirm it contains the boot payload (look for the `[REVELL — POST-COMPACTION RECOVERY]` header).
+- Confirm `~/.claude/hooks/` contains all five Revell scripts and they're executable.
+- Run `claude mcp list` — should show `revell` as `✓ Connected`.
+
+Do **not** verify by running `/compact`. The architecture is designed so memories survive compaction; it isn't designed to make compaction free of cost. Forced `/compact` paraphrases the in-progress conversation regardless of whether the Revell setup is working. Treat `/compact` as a real discontinuity, never a setup test.
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Claude Code (agent's view)" icon="user" href="/agents/claude-code">
+    What an agent sees at compaction time and how to reassemble chunks
+  </Card>
+
+  <Card title="MCP Tools Reference" icon="terminal" href="/agents/tools">
+    The full set of tools the Revell MCP server exposes
+  </Card>
+
+  <Card title="Compaction (general)" icon="shield" href="/agents/compaction">
+    How Revell handles compaction across all frameworks
+  </Card>
+
+  <Card title="Hermes (sibling integration)" icon="link" href="/Frameworks/Hermes/compaction-protection">
+    For comparison — Hermes's compaction integration uses plugin-based mechanics
+  </Card>
+</CardGroup>

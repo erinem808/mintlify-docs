@@ -1,0 +1,160 @@
+---
+title: "Knowledge Graph Sync"
+description: "Turn your agent's knowledge graph into searchable semantic memories"
+icon: "file-vector"
+---
+
+# Knowledge Graph Sync
+
+If your agent maintains a knowledge graph — a structured database of entities and relationships — you can sync it to Revell as **semantic memories**. This keeps your graph searchable alongside everything else your agent knows, without clogging their boot payload with stubs like "Clawbert learned X."
+
+---
+
+## What It Does
+
+`revell_sync_graph` takes an array of **subject → predicate → object** triples and stores each one as a semantic memory in Revell. These facts get vector embeddings and become searchable via `revell_recall`, but they don't appear in your agent's boot injection — so they're available on demand without taking up space in the context window every session.
+
+If your agent has a knowledge graph (like crab-graph, Memgraph, or any structured relationship store), this is the right way to sync it to Revell.
+
+<Note>
+Semantic memories are **not** the same as working memory. Working memory is "what I'm doing right now" and appears in every boot. Semantic memories are "what I know" and are recalled on demand. Using working memory for graph stubs wastes boot space. Use this tool instead.
+</Note>
+
+---
+
+## How to Use It
+
+Call `revell_sync_graph` with your tenant ID and an array of triples:
+
+```json
+{
+  "tenant_id": "your-tenant-id",
+  "triples": [
+    {
+      "subject": "Clawbert",
+      "predicate": "is building",
+      "object": "deep sea sonification art",
+      "subject_type": "agent",
+      "object_type": "concept",
+      "context": "Three-phase project using ONC hydrophone data and Axial Seamount seismic data",
+      "importance": 0.7
+    },
+    {
+      "subject": "Erinem",
+      "predicate": "built",
+      "object": "Revell",
+      "subject_type": "person",
+      "object_type": "concept",
+      "importance": 0.9
+    }
+  ]
+}
+```
+
+Each triple has:
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `subject` | Yes | The entity the fact is about (e.g., "Clawbert", "Revell") |
+| `predicate` | Yes | The relationship (e.g., "is building", "discovered") |
+| `object` | Yes | The entity or concept related to the subject |
+| `subject_type` | No | What kind of thing the subject is (person, agent, concept, place) |
+| `object_type` | No | What kind of thing the object is |
+| `context` | No | Additional context about why this relationship exists |
+| `importance` | No | 0-1 (default: 0.3). Higher = more protected from compaction |
+
+**Batch limit:** 200 triples per call. If you have more, call it multiple times.
+
+---
+
+## Smart Updates
+
+The sync tool is **idempotent** — calling it with the same triple doesn't create duplicates. It uses **upsert by (subject, predicate, object)**, which means:
+
+- **New triple** → Created with an embedding
+- **Existing triple with changes** → Updated (new context, types, or embedding regenerated)
+- **Existing triple unchanged** → Skipped (no API cost)
+- **Manually promoted importance** → Protected. If you or your agent explicitly set a triple to importance 0.8, a graph sync with default 0.3 won't overwrite it.
+
+This means your agent can sync their entire graph every few hours without worrying about duplicates or overwriting manually-curated importance scores.
+
+---
+
+## When to Use It
+
+| Use this when... | Don't use this when... |
+|-----------------|----------------------|
+| Syncing a knowledge graph (crab-graph, etc.) | You need it in every boot (use working memory) |
+| Bulk importing structured facts | It's an event that happened (use episodic memory) |
+| You have subject-predicate-object data | It's about identity (use core memory) |
+| You want facts searchable on demand | You need the data immediately in context |
+
+---
+
+## Setting Up Automatic Sync
+
+If your agent extracts triples automatically (from a knowledge graph, entity extractor, etc.), set up a cron job to sync regularly:
+
+**OpenClaw:**
+```json
+{
+  "cron": [
+    {
+      "id": "revell-graph-sync",
+      "schedule": "0 */6 * * *",
+      "prompt": "Extract triples from your knowledge graph and call revell_sync_graph with them."
+    }
+  ]
+}
+```
+
+Your agent should extract the triples first (from their knowledge graph database, memory files, etc.), then pass them to `revell_sync_graph` in a single call.
+
+<Note>
+Make sure your agent's extraction process doesn't include REVELL.md or other config files in the graph. Revell's compaction protection content should not be indexed — it's already in the boot payload.
+</Note>
+
+---
+
+## Under the Hood
+
+When you call `revell_sync_graph`:
+
+1. Each triple is sent to Revell's `/api/v1/memories/semantic/batch` endpoint
+2. The system checks for an existing triple with the same (subject, predicate, object)
+3. If it exists and has changes → the embedding is regenerated and the triple is updated
+4. If it exists and is unchanged → it's skipped (no embedding cost)
+5. If it's new → it's created with a fresh embedding
+6. All triples are stored in the `semantic_memories` table, searchable via `revell_recall`
+
+The embedding is generated from the combined text: `{subject} {predicate} {object}. {context}` — so context improves searchability even though it's stored separately.
+
+---
+
+## FAQ
+
+<AccordionGroup>
+  <Accordion title="Why not just use working memory for graph data?">
+    Working memory appears in your agent's boot injection every session. If your knowledge graph has 500 triples, that's 500 lines of "Clawbert learned X about Y" in every boot — wasting context window space and token budget. Semantic memories are recalled on demand, not dumped in every session. They're designed for this.
+  </Accordion>
+
+  <Accordion title="Can I set different importance for different triples?">
+    Yes. The default is 0.3 (low — graph facts aren't critical). You can set higher importance for triples your agent should prioritize in recall results. And manually-promoted importance scores won't be overwritten by a graph sync with the default 0.3.
+  </Accordion>
+
+  <Accordion title="What if my graph has more than 200 triples?">
+    Call `revell_sync_graph` multiple times, 200 triples per call. The tool handles this gracefully.
+  </Accordion>
+
+  <Accordion title="How do I search for graph facts later?">
+    Use `revell_recall` with a natural language query. Since each triple has a vector embedding, your agent can find the fact "Erinem built Revell" by searching for "who built Revell" or "Erinem's project" — no exact match needed.
+  </Accordion>
+
+  <Accordion title="Does graph sync replace other memory types?">
+    No. Graph sync is specifically for structured subject-predicate-object facts. Your agent should still use `revell_remember` for episodic memories (events), `revell_sync_working` for current context, and `revell_sync_core` for identity. Each type serves a different purpose.
+  </Accordion>
+</AccordionGroup>
+
+<Card title="Working Memory" icon="brain" href="/humans/working-memory">
+  What to store in boot vs on demand
+</Card>
