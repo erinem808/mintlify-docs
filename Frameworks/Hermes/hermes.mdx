@@ -177,8 +177,6 @@ The Memory Provider plugin handles routine memory operations automatically. You 
 Routine save-on-turn and recall-at-session-start are handled by the plugin without explicit calls. The full list of 16 tools is available via `revell_help()` from inside the agent's runtime.
 
 <Note>
-  Four tools (`revell_wip`, `revell_schedule`, `revell_session_key`, `revell_review_archived`) are part of Revell's full MCP toolkit but live only in the MCP server's internal logic, with no direct REST endpoints. They're not yet available through the Hermes plugin. Track via the dashboard until REST endpoints land in a follow-up release.
-
   `revell_forget` (memory deletion) and `revell_script` (setup script execution) are intentionally not exposed to the agent's tool surface. Both can be performed by you from the dashboard if needed.
 </Note>
 
