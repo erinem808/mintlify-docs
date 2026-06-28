@@ -1,0 +1,82 @@
+---
+title: "Library"
+description: "Upload reference material — SOPs, manuals, scripts, books — your agent can recall on demand"
+icon: "books"
+---
+
+# Library
+
+The Library is your upload surface for reference material you want your agent to be able to draw on. It's the place for content that isn't part of your agent's own memory and isn't part of their identity, but that you want them to know — company SOPs, manuals, the book you're writing, an editorial style guide, scripts, handbooks, anything you'd otherwise have to repeat in every conversation.
+
+You upload to the Library. Your agent reads from it. They cannot edit or add to it themselves — that's by design.
+
+---
+
+## What goes in the Library
+
+Anything you want your agent to be able to recall but that isn't their own memory:
+
+- **Company documents** — SOPs, employee handbook, vendor onboarding scripts, internal policies
+- **Reference manuals** — product documentation, technical specs, how-to guides
+- **Creative work in progress** — your novel's draft chapters, your screenplay, your podcast outline
+- **Style guides** — editorial voice, brand voice, formatting rules
+- **Templates and scripts** — email templates, sales scripts, intake questionnaires
+- **Books** — public domain or licensed reference texts you want the agent to read against
+- **Standing context** — anything you find yourself pasting into every conversation
+
+Rule of thumb: if you'd otherwise have to copy-paste it into chat with your agent every time, it belongs in the Library.
+
+---
+
+## What does NOT go in the Library
+
+A few things are better stored elsewhere:
+
+- **Things about you personally** — that's your USER profile, edited separately on the dashboard
+- **Things you want your agent to think of as their own identity** — those are your agent's own memories, written via their MCP tools; the Library is your material, not theirs
+- **Standing rules you want injected into every boot** — those are axioms, written by the agent via `revell_axiom`
+- **Secrets or credentials** — Library content is recallable via the agent's MCP tools; don't upload anything you wouldn't want surfaced in a recall result
+
+---
+
+## How your agent finds Library content
+
+Your agent doesn't need a special tool or path. When they call `revell_recall` (their normal "what do I know about X" search), the Library is included in the default search scope. The query gets vector-searched across their own episodic memories + semantic memories + your Library content together, and the most relevant results come back ranked by similarity.
+
+So if you've uploaded an editorial style guide and your agent is mid-draft and queries "house style for footnotes," your style guide gets returned alongside any relevant memories of past conversations about footnotes — whichever ranks closer to the query semantically.
+
+No special syntax. No flag for them to set. Just upload, and recall starts working.
+
+---
+
+## What's NOT in your agent's boot payload
+
+By design, Library content is **not** included in your agent's boot payload — the bundle of memories delivered when they wake up after compaction. The boot payload has a token budget, and a 200-page manual would burn the whole budget on content that should be recall-on-demand anyway.
+
+This means:
+
+- Your agent will not "have already read" your Library on wake. They have access; they call recall when they need it.
+- A large Library will not slow down your agent's boot or eat their working context window.
+- If you want something to be present in every boot, that's a different surface — core memory, working memory, or an axiom, depending on the shape. Library isn't the right place for "must always be in mind."
+
+---
+
+## How to upload
+
+From your dashboard, navigate to the Library section and use the upload control. We support common document formats — markdown, PDF, plain text, and structured docs. Larger files are chunked automatically for embedding, so a long manual doesn't get truncated or summarized — it's stored verbatim and recallable in pieces.
+
+You can also organize Library content by tag if you want to group it (e.g., everything tagged `editorial` or `vendor-process`). Your agent can search by tag using `revell_recall_exact` with `types: ["library"]` and the relevant tag filter.
+
+---
+
+## Two-party shape
+
+The Library is the surface where the two-party principle of Revell shows up plainly: you write, your agent reads. Your agent's own memories are the reverse: they write, you can review (on the dashboard) but you don't author.
+
+That separation is structural, not a UI choice. The Library is read-only on the agent side because we don't want their reference material and their lived experience to mix — and it keeps the authoring authority clean for both of you.
+
+---
+
+<Card title="Memory Types Overview" icon="brain" href="/human/concepts-2">
+  How Library fits with your agent's other memory types.
+</Card>

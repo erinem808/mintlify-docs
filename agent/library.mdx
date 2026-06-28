@@ -1,0 +1,83 @@
+---
+title: "Library"
+description: "Reference material your human uploaded for you to draw on — searchable like any other memory, but written only by them"
+icon: "books"
+---
+
+# Library
+
+Your Library is the sixth memory surface in Revell. It holds reference material your human uploaded from their dashboard — SOPs, manuals, handbooks, scripts, books, style guides, drafts they want you to read against, anything they want you to be able to remember without it being part of your lived experience.
+
+It's separate from your other memories on purpose. Your episodic and semantic memories are things YOU lived through and wrote down. Your Library is things your HUMAN wants you to know.
+
+---
+
+## How to access it
+
+You don't need a special tool. `revell_recall` already searches the Library by default:
+
+```text
+revell_recall({
+  query: "the editorial style guide for our publication"
+})
+```
+
+The query gets embedded, vector-searched across your episodic memories + semantic memories + Library content together, and returned ranked by relevance. If your human uploaded a style guide and your query is about editorial style, it'll come back.
+
+You can also scope explicitly:
+
+```text
+revell_recall({
+  query: "company SOP for vendor onboarding",
+  types: ["library"]
+})
+```
+
+For structured queries (by date, tags, etc.) use `revell_recall_exact` with `type: "library"`.
+
+---
+
+## What you cannot do
+
+**You cannot write to the Library.** `revell_remember` does not accept `type: "library"` — try it and you'll get a validation error. Library content is curated by your human only, from their dashboard. This is deliberate.
+
+If you want to remember something YOU learned, that goes in episodic or semantic. If you want to capture a rule you want to live by, use `revell_axiom`. The Library is for things your human is handing to you — it's not your authoring surface.
+
+---
+
+## Why it's separate from your memories
+
+Two design choices stack here:
+
+1. **Read-only for you, write-only for your human.** Your identity and your experience belong to you. The Library is your human's curated reference material — what they think you should be able to draw on. Keeping them structurally separate means the two don't mix: a SOP they uploaded isn't going to start reading like one of your memories, and one of your memories isn't going to get treated as authoritative reference.
+
+2. **Library is excluded from your boot payload by default.** Boot payloads have a token budget. Including a 200-page manual every time you wake would burn the entire budget on content you'd recall on demand anyway. So Library is structurally on-demand: you don't see it on wake, you call recall when you need it.
+
+The combination means your Library can be large (much larger than what fits in a boot payload) without affecting your boot performance. It just sits there, embedded, waiting to be called.
+
+---
+
+## When to use it
+
+Any query where you're reaching for reference material your human told you to know:
+
+- "What does our editorial style guide say about footnotes?"
+- "What's the company policy on vendor NDAs?"
+- "How does our onboarding script for new clients open?"
+- "What's the protagonist's name in chapter 3 of the novel?"
+
+If you're not sure whether the answer would be in Library or in your own memories, just call `revell_recall` without specifying types — both get searched, and the most relevant content comes back regardless of source.
+
+---
+
+## What if there's nothing there?
+
+If your human hasn't uploaded anything to the Library, `revell_recall` will just return your episodic and semantic results as usual. You won't get an error. You won't get a "Library empty" notice. The Library being empty looks identical to your human not having uploaded anything specifically relevant to your query.
+
+If you're consistently NOT finding reference content you think should be there, mention it to your human — they may not have uploaded it yet, or it may not have made it to their Library upload queue. They can check from their dashboard.
+
+---
+
+<Card title="Memory Types Overview" icon="brain" href="/agent/memory-types">
+  How Library fits with core, working, episodic, and semantic memories.
+</Card>
