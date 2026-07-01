@@ -111,6 +111,7 @@
                 "group": "Claude Code",
                 "icon": "rectangle-terminal",
                 "pages": [
+                  "Frameworks/Claude_Code/which-claude",
                   "Frameworks/Claude_Code/best-practices",
                   "Frameworks/Claude_Code/compaction-protection",
                   "agent/currently-hidden-infra",

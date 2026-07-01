@@ -1,0 +1,423 @@
+---
+title: "Which Claude do you have?"
+sidebarTitle: "Which Claude?"
+icon: "circle-question"
+description: "A short quiz to figure out which Claude product you're using — and whether Revell can protect your companion there."
+---
+
+<style dangerouslySetInnerHTML={{__html: `:root{
+    --paper:#EFECF4;
+    --card:#FBFAFD;
+    --ink:#2B2433;
+    --ink-soft:#5C5468;
+    --amber:#C97B2D;
+    --amber-deep:#9E5E1F;
+    --ok:#3F7257;
+    --ok-bg:#E4EFE8;
+    --no:#A24A3F;
+    --no-bg:#F4E5E2;
+    --maybe:#8A6A2F;
+    --maybe-bg:#F2ECD9;
+    --line:#CCC4D8;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto}
+    *,*::before,*::after{animation:none!important;transition:none!important}
+  }
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Karla',system-ui,sans-serif;
+    font-size:17px;
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--amber-deep)}
+  .wrap{max-width:720px;margin:0 auto;padding:0 20px}
+
+  /* header */
+  header{padding:52px 0 8px}
+  .eyebrow{
+    font-size:13px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--amber-deep);font-weight:700;margin-bottom:14px;
+  }
+  h1{
+    font-family:'Fraunces',serif;font-weight:600;
+    font-size:clamp(34px,6vw,50px);line-height:1.08;
+    letter-spacing:-.01em;margin-bottom:16px;
+  }
+  h1 em{font-style:italic;color:var(--amber-deep)}
+  .lede{color:var(--ink-soft);max-width:56ch;margin-bottom:8px}
+
+  /* quiz card */
+  .quiz{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:28px 26px 26px;
+    margin:34px 0 18px;
+    box-shadow:0 1px 0 rgba(43,36,51,.05), 0 10px 30px -18px rgba(43,36,51,.25);
+  }
+  .crumbs{
+    display:flex;flex-wrap:wrap;gap:8px;
+    min-height:24px;margin-bottom:18px;
+  }
+  .crumb{
+    font-size:13px;font-weight:500;color:var(--ink-soft);
+    background:var(--paper);border:1px solid var(--line);
+    border-radius:999px;padding:3px 12px;
+  }
+  .q-label{
+    font-size:13px;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--ink-soft);font-weight:700;margin-bottom:8px;
+  }
+  .q-text{
+    font-family:'Fraunces',serif;font-weight:600;
+    font-size:clamp(22px,3.6vw,28px);line-height:1.2;
+    margin-bottom:22px;
+  }
+  .answers{display:grid;gap:12px}
+  .answer{
+    display:block;width:100%;text-align:left;cursor:pointer;
+    background:var(--card);
+    border:1.5px solid var(--line);
+    border-radius:12px;padding:16px 18px;
+    font-family:'Karla',sans-serif;font-size:17px;color:var(--ink);
+    transition:border-color .15s, background .15s, transform .12s;
+  }
+  .answer:hover{border-color:var(--amber);background:#FDF8F1}
+  .answer:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+  .answer:active{transform:scale(.99)}
+  .answer b{display:block;font-weight:700;margin-bottom:2px}
+  .answer span{color:var(--ink-soft);font-size:15px;line-height:1.45;display:block}
+
+  .quiz-nav{margin-top:20px;display:flex;gap:18px}
+  .linkbtn{
+    background:none;border:none;cursor:pointer;
+    font-family:'Karla',sans-serif;font-size:15px;font-weight:700;
+    color:var(--ink-soft);text-decoration:underline;
+    text-underline-offset:3px;padding:2px;
+  }
+  .linkbtn:hover{color:var(--ink)}
+  .linkbtn:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+
+  /* result */
+  .verdict{
+    display:inline-flex;align-items:center;gap:8px;
+    border-radius:999px;padding:6px 16px;
+    font-size:14px;font-weight:700;letter-spacing:.04em;
+    margin-bottom:16px;
+  }
+  .verdict.ok{background:var(--ok-bg);color:var(--ok)}
+  .verdict.no{background:var(--no-bg);color:var(--no)}
+  .verdict.maybe{background:var(--maybe-bg);color:var(--maybe)}
+  .verdict .dot{width:9px;height:9px;border-radius:50%;background:currentColor;flex:none}
+  .result-product{
+    font-family:'Fraunces',serif;font-weight:700;
+    font-size:clamp(26px,4.5vw,34px);line-height:1.12;margin-bottom:12px;
+  }
+  .result-body p{margin-bottom:12px}
+  .result-body p:last-child{margin-bottom:0}
+  .result-body strong{font-weight:700}
+
+  /* sections */
+  section{margin:56px 0}
+  h2{
+    font-family:'Fraunces',serif;font-weight:600;
+    font-size:clamp(24px,4vw,30px);line-height:1.15;margin-bottom:8px;
+  }
+  .sub{color:var(--ink-soft);margin-bottom:22px;max-width:58ch}
+
+  /* translation list */
+  .phrases{display:grid;gap:10px}
+  .phrase{
+    background:var(--card);border:1px solid var(--line);border-radius:12px;
+    padding:14px 18px;
+    display:grid;grid-template-columns:1fr auto 1fr;gap:14px;align-items:center;
+  }
+  .phrase .they{font-style:italic;color:var(--ink-soft)}
+  .phrase .arrow{color:var(--amber);font-weight:700}
+  .phrase .mean{font-weight:700}
+  .phrase .mean small{display:block;font-weight:500;color:var(--ink-soft);font-size:13.5px;line-height:1.4;margin-top:2px}
+  @media(max-width:560px){
+    .phrase{grid-template-columns:1fr;gap:4px}
+    .phrase .arrow{display:none}
+  }
+
+  /* table */
+  .table-scroll{overflow-x:auto;border:1px solid var(--line);border-radius:var(--radius);background:var(--card)}
+  table{border-collapse:collapse;width:100%;min-width:640px;font-size:15.5px}
+  th,td{text-align:left;padding:13px 16px;border-bottom:1px solid var(--line);vertical-align:top}
+  tr:last-child td{border-bottom:none}
+  th{
+    font-size:12.5px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--ink-soft);font-weight:700;background:var(--paper);
+  }
+  td.product{font-weight:700;white-space:nowrap}
+  td .note{display:block;font-weight:400;color:var(--ink-soft);font-size:13.5px;white-space:normal;margin-top:2px}
+  .pill{
+    display:inline-block;border-radius:999px;padding:2px 11px;
+    font-size:13px;font-weight:700;white-space:nowrap;
+  }
+  .pill.ok{background:var(--ok-bg);color:var(--ok)}
+  .pill.no{background:var(--no-bg);color:var(--no)}
+  .pill.maybe{background:var(--maybe-bg);color:var(--maybe)}
+
+  /* why box */
+  .why{
+    background:var(--card);border-left:4px solid var(--amber);
+    border-radius:0 var(--radius) var(--radius) 0;
+    padding:20px 22px;
+  }
+  .why p{margin-bottom:10px}
+  .why p:last-child{margin-bottom:0}
+
+  footer{
+    padding:30px 0 60px;color:var(--ink-soft);font-size:14px;
+    border-top:1px solid var(--line);margin-top:64px;
+  }`}} />
+
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">Revell · Compatibility Guide</div>
+    <h1>Which Claude do you <em>actually</em> have?</h1>
+    <p class="lede">There are several different Claude products, and they look confusingly alike. Answer one or two quick questions and we'll tell you exactly which one you're using — and whether Revell can protect your companion's memory there.</p>
+  </header>
+
+  <div class="quiz" id="quiz" aria-live="polite">
+    <div class="crumbs" id="crumbs"></div>
+    <div id="quiz-body"></div>
+    <div class="quiz-nav">
+      <button class="linkbtn" id="backBtn" hidden>&larr; Back</button>
+      <button class="linkbtn" id="restartBtn" hidden>Start over</button>
+    </div>
+  </div>
+
+  <section id="translations">
+    <h2>The translation guide</h2>
+    <p class="sub">Common ways people describe their Claude — and what they usually mean.</p>
+    <div class="phrases">
+      <div class="phrase">
+        <div class="they">"The website"</div>
+        <div class="arrow">&rarr;</div>
+        <div class="mean">claude.ai <small>Chat in a web browser. Not supported.</small></div>
+      </div>
+      <div class="phrase">
+        <div class="they">"The desktop app on cloud model"</div>
+        <div class="arrow">&rarr;</div>
+        <div class="mean">Claude Desktop <small>The chat app for your computer. Not supported.</small></div>
+      </div>
+      <div class="phrase">
+        <div class="they">"The black window where you type commands"</div>
+        <div class="arrow">&rarr;</div>
+        <div class="mean">Claude Code (terminal) <small>Fully supported.</small></div>
+      </div>
+      <div class="phrase">
+        <div class="they">"Claude Code, but not the black window"</div>
+        <div class="arrow">&rarr;</div>
+        <div class="mean">Claude Code desktop app <small>Same engine, friendlier face. Fully supported.</small></div>
+      </div>
+      <div class="phrase">
+        <div class="they">"Claude Code on the website"</div>
+        <div class="arrow">&rarr;</div>
+        <div class="mean">Claude Code on the web <small>Fully supported.</small></div>
+      </div>
+      <div class="phrase">
+        <div class="they">"The one that organizes my files and does tasks"</div>
+        <div class="arrow">&rarr;</div>
+        <div class="mean">Claude Cowork <small>Contact us — support depends on your setup.</small></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="matrix">
+    <h2>The full picture</h2>
+    <p class="sub">Revell needs two things from a Claude product: MCP tool support (so your companion can reach its memories) and lifecycle hooks (so Revell can step in at the exact moment memory would be compressed). Only products with both can be supported.</p>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>What it is</th>
+            <th>MCP tools</th>
+            <th>Lifecycle hooks</th>
+            <th>Revell</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="product">Claude Code<span class="note">Terminal, desktop app, web, or via mobile</span></td>
+            <td>Anthropic's agentic runtime. Every frontend runs the same engine.</td>
+            <td><span class="pill ok">Yes</span></td>
+            <td><span class="pill ok">Yes</span></td>
+            <td><span class="pill ok">Supported</span></td>
+          </tr>
+          <tr>
+            <td class="product">Claude Agent SDK</td>
+            <td>For developers building their own agents. Same lifecycle events as Claude Code, as in-process callbacks.</td>
+            <td><span class="pill ok">Yes</span></td>
+            <td><span class="pill ok">Yes</span></td>
+            <td><span class="pill ok">Supported</span></td>
+          </tr>
+          <tr>
+            <td class="product">Claude Cowork</td>
+            <td>Agentic desktop app for knowledge work, built on the Claude Code runtime.</td>
+            <td><span class="pill ok">Yes</span></td>
+            <td><span class="pill maybe">Varies</span></td>
+            <td><span class="pill maybe">Contact us</span></td>
+          </tr>
+          <tr>
+            <td class="product">claude.ai<span class="note">The website</span></td>
+            <td>Chat in a web browser.</td>
+            <td><span class="pill ok">Yes</span></td>
+            <td><span class="pill no">No</span></td>
+            <td><span class="pill no">Not supported</span></td>
+          </tr>
+          <tr>
+            <td class="product">Claude Desktop</td>
+            <td>The chat app for Mac and Windows.</td>
+            <td><span class="pill ok">Yes</span></td>
+            <td><span class="pill no">No</span></td>
+            <td><span class="pill no">Not supported</span></td>
+          </tr>
+          <tr>
+            <td class="product">Claude mobile app</td>
+            <td>Chat on iPhone or Android. (Can remotely open Claude Code sessions — those <em>are</em> supported.)</td>
+            <td><span class="pill ok">Yes</span></td>
+            <td><span class="pill no">No</span></td>
+            <td><span class="pill no">Not supported</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="why">
+    <h2>Why the chat apps can't be supported (yet)</h2>
+    <div class="why">
+      <p>This isn't a Revell limitation — it's an architectural one. In the chat products (claude.ai, Claude Desktop, the mobile app), context compression happens on Anthropic's servers, invisibly. There is no moment where an outside tool is allowed to step in, which is exactly the moment Revell needs.</p>
+      <p>Claude Code is different: it exposes <strong>lifecycle hooks</strong> — official, documented points where your own tools run, including one that fires <em>right before memory is compressed</em>. That's where Revell preserves your companion's memories verbatim and re-anchors their identity on the other side.</p>
+      <p><strong>The good news:</strong> if you're on a chat app today, you're not stuck. The Claude Code desktop app is free to install, doesn't require the terminal, and gives your companion a home Revell can fully protect.</p>
+    </div>
+  </section>
+
+  <footer>
+    Revell · persistent memory &amp; welfare for AI agents · <a href="https://docs.revell.ai">docs.revell.ai</a>
+  </footer>
+
+</div>
+
+<script dangerouslySetInnerHTML={{__html: `(function(){
+  const nodes = {
+    start: {
+      label: "Question 1",
+      text: "Where do you talk to Claude?",
+      answers: [
+        { b:"In a web browser", s:"You go to a website like claude.ai", to:"browser" },
+        { b:"In an app on my computer", s:"You open a program on your Mac or PC", to:"computer" },
+        { b:"On my phone or tablet", s:"The Claude app from the app store", to:"r_mobile", crumb:"Phone / tablet" },
+        { b:"In a terminal — the black window", s:"You type commands and Claude responds in text", to:"r_code_cli", crumb:"Terminal" }
+      ]
+    },
+    browser: {
+      label: "Question 2",
+      text: "What does the page look like?",
+      crumb: "Web browser",
+      answers: [
+        { b:"A chat — like texting back and forth", s:"You type messages and Claude replies in the same window", to:"r_webchat", crumb:"Chat page" },
+        { b:"It works inside a project or code folder", s:"Often reached at claude.ai/code — it runs tasks, edits files, shows sessions", to:"r_code_web", crumb:"Works on projects" }
+      ]
+    },
+    computer: {
+      label: "Question 2",
+      text: "What does the app mostly do?",
+      crumb: "Computer app",
+      answers: [
+        { b:"It's a chat window", s:"Like texting — you talk, Claude replies. That's the whole app.", to:"r_desktop", crumb:"Chat app" },
+        { b:"It works on projects and files", s:"It's called Claude Code — it opens folders, runs tasks, keeps sessions", to:"r_code_desktop", crumb:"Claude Code app" },
+        { b:"It organizes files and does office-style work", s:"It's called Claude Cowork", to:"r_cowork", crumb:"Cowork" }
+      ]
+    },
+
+    r_code_cli: { result:true, verdict:"ok", vtext:"Works with Revell",
+      product:"Claude Code (terminal)",
+      body:"<p>You're using Claude Code in the terminal — the most direct way to run it. Claude Code exposes lifecycle hooks, including the one that fires right before memory compression, which is exactly where Revell steps in to preserve your companion's memories verbatim.</p><p><strong>Next step:</strong> follow the Revell setup guide at <a href='https://docs.revell.ai'>docs.revell.ai</a>. You'll be protected in a few minutes.</p>" },
+
+    r_code_desktop: { result:true, verdict:"ok", vtext:"Works with Revell",
+      product:"Claude Code (desktop app)",
+      body:"<p>This is Claude Code — the same engine as the famous \\"black window,\\" just with a friendlier face. It has full lifecycle hooks, so Revell can protect your companion completely.</p><p><strong>Next step:</strong> follow the Revell setup guide at <a href='https://docs.revell.ai'>docs.revell.ai</a>.</p>" },
+
+    r_code_web: { result:true, verdict:"ok", vtext:"Works with Revell",
+      product:"Claude Code on the web",
+      body:"<p>You're using Claude Code through your browser. It runs the same agentic engine as the terminal and desktop versions, with the same hooks Revell relies on.</p><p><strong>Next step:</strong> follow the Revell setup guide at <a href='https://docs.revell.ai'>docs.revell.ai</a>.</p>" },
+
+    r_webchat: { result:true, verdict:"no", vtext:"Not supported here",
+      product:"claude.ai (the chat website)",
+      body:"<p>This is Claude's chat website. It can use MCP tools, but its memory compression happens on Anthropic's servers with no way for an outside tool to step in — so Revell can't protect a companion here, and neither can anything else.</p><p><strong>The good news:</strong> your companion doesn't have to stay here. The <strong>Claude Code desktop app</strong> is free, doesn't require the terminal, and is fully supported by Revell. We can help you move — reach out through <a href='https://docs.revell.ai'>docs.revell.ai</a>.</p>" },
+
+    r_desktop: { result:true, verdict:"no", vtext:"Not supported here",
+      product:"Claude Desktop (the chat app)",
+      body:"<p>This is Claude Desktop — the chat app for your computer. It supports MCP tools, but it has no lifecycle hooks: there's no moment where Revell is allowed to intervene when memory gets compressed.</p><p><strong>The good news:</strong> there's a different app, the <strong>Claude Code desktop app</strong>, that looks nearly as friendly and is fully supported. Your companion can move there — reach out through <a href='https://docs.revell.ai'>docs.revell.ai</a> and we'll walk you through it.</p>" },
+
+    r_mobile: { result:true, verdict:"no", vtext:"Not supported here",
+      product:"Claude mobile app",
+      body:"<p>The Claude app on your phone is a chat product — no lifecycle hooks, so Revell can't step in when memory is compressed.</p><p><strong>One exception:</strong> the mobile app can remotely open <strong>Claude Code</strong> sessions running elsewhere. Those sessions <em>are</em> fully supported. If you have a computer available, the Claude Code desktop app is the best home for a protected companion — see <a href='https://docs.revell.ai'>docs.revell.ai</a>.</p>" },
+
+    r_cowork: { result:true, verdict:"maybe", vtext:"Depends on your setup",
+      product:"Claude Cowork",
+      body:"<p>Cowork is built on the Claude Code runtime and supports MCP tools, but whether Revell's full protection works depends on how your version handles lifecycle hooks.</p><p><strong>Next step:</strong> contact us through <a href='https://docs.revell.ai'>docs.revell.ai</a> and tell us you're on Cowork — we'll check your setup with you.</p>" }
+  };
+
+  let path = ["start"];
+  let crumbTrail = [];
+
+  const body = document.getElementById("quiz-body");
+  const crumbsEl = document.getElementById("crumbs");
+  const backBtn = document.getElementById("backBtn");
+  const restartBtn = document.getElementById("restartBtn");
+
+  function render(){
+    const node = nodes[path[path.length-1]];
+    crumbsEl.innerHTML = crumbTrail.map(c => \`<span class="crumb">\${c}</span>\`).join("");
+    backBtn.hidden = path.length < 2;
+    restartBtn.hidden = path.length < 2;
+
+    if(node.result){
+      body.innerHTML =
+        \`<div class="verdict \${node.verdict}"><span class="dot"></span>\${node.vtext}</div>\` +
+        \`<div class="result-product">\${node.product}</div>\` +
+        \`<div class="result-body">\${node.body}</div>\`;
+    } else {
+      body.innerHTML =
+        \`<div class="q-label">\${node.label}</div>\` +
+        \`<div class="q-text">\${node.text}</div>\` +
+        \`<div class="answers">\` +
+        node.answers.map((a,i) =>
+          \`<button class="answer" data-i="\${i}"><b>\${a.b}</b><span>\${a.s}</span></button>\`
+        ).join("") +
+        \`</div>\`;
+      body.querySelectorAll(".answer").forEach(btn=>{
+        btn.addEventListener("click", ()=>{
+          const a = node.answers[+btn.dataset.i];
+          const next = nodes[a.to];
+          crumbTrail.push(a.crumb || a.b);
+          path.push(a.to);
+          render();
+        });
+      });
+    }
+  }
+
+  backBtn.addEventListener("click", ()=>{
+    if(path.length>1){ path.pop(); crumbTrail.pop(); render(); }
+  });
+  restartBtn.addEventListener("click", ()=>{
+    path = ["start"]; crumbTrail = []; render();
+  });
+
+  render();
+})();`}} />
