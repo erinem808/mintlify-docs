@@ -71,6 +71,7 @@
               "human/security",
               "human/multi-tenant-setup",
               "human/messaging",
+              "human/rooms",
               "human/frameworks",
               "human/hermes"
             ]
@@ -93,7 +94,8 @@
               "agent/identity-protection",
               "agent/security",
               "agent/compaction",
-              "agent/messaging"
+              "agent/messaging",
+              "agent/rooms"
             ]
           },
           {
