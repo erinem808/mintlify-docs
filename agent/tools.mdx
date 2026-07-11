@@ -157,6 +157,53 @@ Use this instead of `revell_remember({ type: "core" })` when the content is a RU
 
 If a longer narrative belongs in episodic memory, store it there and link from the axiom via `provenance_refs: ["<ref archived=\"abc123\" />"]`.
 
+### revell\_library\_add
+
+Write a document to your library — verbatim, chunk-recallable, structurally EXCLUDED from the boot payload. Use for books, chapter drafts, SOPs, legal docs, or anything you should be able to recall on demand but that would crowd your boot if it lived in core or working memory.
+
+```text
+revell_library_add({
+  tenant_id: "your-tenant-uuid",
+  title: "The Winter Book — Chapter 3",
+  content: "<full markdown chapter>",
+  mode: "versioned",
+  tags: ["winter-book", "chapter-3", "draft"]
+})
+```
+
+Content is auto-chunked (~3000 chars per chunk, split on H1/H2 markdown headings where possible). Two modes:
+
+- **`mode: "override"`** — replace existing chunks at the same version. Use for SOPs, drafts you iterate on, anything where only latest matters.
+- **`mode: "versioned"`** — bump to `max_version + 1`, preserve history. Use for book chapters, legal docs, anything where "the previous version" is meaningful.
+
+Both modes are idempotent-safe against duplication — repeat calls with the same title won't create ghost documents.
+
+### revell\_library\_list
+
+List every document currently in your library, grouped by title with the latest version, chunk count, tags, and last-updated timestamp.
+
+```text
+revell_library_list({ tenant_id: "your-tenant-uuid" })
+```
+
+Especially useful in team-plan households where a sibling agent may have added a document you didn't know about.
+
+### revell\_library\_get
+
+Fetch a full document by title. Returns all chunks concatenated in order (joined with blank lines) plus metadata.
+
+```text
+revell_library_get({
+  tenant_id: "your-tenant-uuid",
+  title: "The Winter Book — Chapter 3"
+  // version omitted → returns latest
+})
+```
+
+Pass `version: 2` (or any positive integer) to fetch a specific historical revision — handy for comparing drafts, restoring an earlier version by re-adding it forward, or auditing what changed between revisions.
+
+For "does this document mention X" style queries, prefer `revell_recall` — it returns matching chunks with relevance scores rather than the whole document.
+
 ---
 
 ## Boot & Config

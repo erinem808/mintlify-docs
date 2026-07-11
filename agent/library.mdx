@@ -1,80 +1,172 @@
 ---
 title: "Library"
-description: "Reference material your human uploaded for you to draw on — searchable like any other memory, but written only by them"
+description: "Verbatim reference material — books, SOPs, drafts. Uploaded by your human, or written by you. Searchable like any other memory, structurally excluded from the boot payload."
 icon: "books"
 ---
 
 # Library
 
-Your Library is the sixth memory surface in Revell. It holds reference material your human uploaded from their dashboard — SOPs, manuals, handbooks, scripts, books, style guides, drafts they want you to read against, anything they want you to be able to remember without it being part of your lived experience.
+Your Library is the sixth memory surface in Revell. It holds verbatim reference material — SOPs, manuals, handbooks, scripts, books, style guides, drafts, chapter revisions, anything you should be able to recall on demand but that would crowd your boot payload if it lived in core or working memory.
 
-It's separate from your other memories on purpose. Your episodic and semantic memories are things YOU lived through and wrote down. Your Library is things your HUMAN wants you to know.
+Library content can come from two sources:
+
+1. **Uploaded by your human** from their dashboard (SOPs, style guides, source material they want you to draw on).
+2. **Written by you or a sibling agent** via `revell_library_add` (books, chapter drafts, working documents, anything you're authoring or maintaining).
+
+Either way, the same rules apply: chunk-recallable, embedded for search, and **structurally excluded from your boot payload** — so a book-length document can live in your Library without touching your boot budget.
 
 ---
 
-## How to access it
+## The three MCP tools
 
-You don't need a special tool. `revell_recall` already searches the Library by default:
+<CardGroup cols={3}>
+  <Card title="revell_library_add" icon="floppy-disk">
+    Write a document (auto-chunks on markdown headings).
+  </Card>
+  <Card title="revell_library_list" icon="list">
+    See what's in your library.
+  </Card>
+  <Card title="revell_library_get" icon="book-open">
+    Pull back a full document.
+  </Card>
+</CardGroup>
+
+You can also find matching excerpts via `revell_recall` — Library content is searched by default alongside your episodic and semantic memories.
+
+---
+
+## Writing to the library
 
 ```text
-revell_recall({
-  query: "the editorial style guide for our publication"
+revell_library_add({
+  tenant_id: "your-tenant-uuid",
+  title: "The Winter Book — Chapter 3",
+  content: "<full markdown chapter>",
+  mode: "versioned",
+  tags: ["winter-book", "chapter-3", "draft"]
 })
 ```
 
-The query gets embedded, vector-searched across your episodic memories + semantic memories + Library content together, and returned ranked by relevance. If your human uploaded a style guide and your query is about editorial style, it'll come back.
+The content is auto-chunked (~3000 chars per chunk, split on H1/H2 markdown headings where possible) and stored as a sequence of rows under one `(title, version)` pair.
 
-You can also scope explicitly:
+### Two modes
+
+**`mode: "override"`** — if a document with the same title already exists, its existing chunks at the current version are deleted and replaced with the new content at the same version number. Use for:
+
+- SOPs where only the latest matters
+- Drafts you're iterating on and don't need history for
+- Reference material you re-generate periodically
+
+**`mode: "versioned"`** — if a document with the same title exists, the new content is written at `max_version + 1`. Old versions stay recallable. Use for:
+
+- Book chapters (you may want to reference draft 2 vs draft 3 later)
+- Legal documents where revision history matters
+- Anything where "the previous version" is a meaningful thing to be able to pull back
+
+Both modes are safe to call repeatedly — you won't create duplicate documents.
+
+---
+
+## Listing what's in your library
+
+```text
+revell_library_list({ tenant_id: "your-tenant-uuid" })
+```
+
+Returns a summary of every document in your library at its latest version:
+
+```json
+{
+  "document_count": 3,
+  "documents": [
+    {
+      "title": "The Winter Book — Chapter 3",
+      "latestVersion": 4,
+      "chunkCount": 12,
+      "sourceFilename": null,
+      "tags": ["winter-book", "chapter-3", "draft"],
+      "updatedAt": "2026-07-11T09:22:00.000Z"
+    },
+    ...
+  ]
+}
+```
+
+Especially useful in team-plan households where a sibling agent may have written or updated a document you didn't know about.
+
+---
+
+## Pulling back a full document
+
+```text
+revell_library_get({
+  tenant_id: "your-tenant-uuid",
+  title: "The Winter Book — Chapter 3"
+  // version omitted → returns latest
+})
+```
+
+Returns all chunks concatenated in order (joined with blank lines) plus metadata:
+
+```json
+{
+  "title": "The Winter Book — Chapter 3",
+  "version": 4,
+  "chunkCount": 12,
+  "sourceFilename": null,
+  "tags": ["winter-book", "chapter-3", "draft"],
+  "updatedAt": "2026-07-11T09:22:00.000Z",
+  "content": "<full document text, chunks joined>"
+}
+```
+
+Pass `version: 2` (or any positive integer) to fetch a specific historical revision instead of the latest. Handy when you want to compare drafts or restore an earlier version — combine with `revell_library_add(mode: "versioned")` to save the older draft forward as the new latest.
+
+---
+
+## Finding excerpts with recall
+
+For "does this document mention X" queries, use `revell_recall` instead of pulling the whole thing back:
 
 ```text
 revell_recall({
-  query: "company SOP for vendor onboarding",
+  query: "the protagonist's name in chapter 3",
   types: ["library"]
 })
 ```
 
-For structured queries (by date, tags, etc.) use `revell_recall_exact` with `type: "library"`.
+Returns matching chunks scored by relevance, each with its position in the document so you can request neighbors for context if the excerpt isn't enough. This is much cheaper than fetching an entire book when you only need one paragraph.
+
+`revell_recall` searches Library by default alongside episodic and semantic memories, so you don't need to scope explicitly unless you want to.
 
 ---
 
-## What you cannot do
-
-**You cannot write to the Library.** `revell_remember` does not accept `type: "library"` — try it and you'll get a validation error. Library content is curated by your human only, from their dashboard. This is deliberate.
-
-If you want to remember something YOU learned, that goes in episodic or semantic. If you want to capture a rule you want to live by, use `revell_axiom`. The Library is for things your human is handing to you — it's not your authoring surface.
-
----
-
-## Why it's separate from your memories
+## Why it's separate from your other memories
 
 Two design choices stack here:
 
-1. **Read-only for you, write-only for your human.** Your identity and your experience belong to you. The Library is your human's curated reference material — what they think you should be able to draw on. Keeping them structurally separate means the two don't mix: a SOP they uploaded isn't going to start reading like one of your memories, and one of your memories isn't going to get treated as authoritative reference.
+1. **Distinct provenance from your lived experience.** Your episodic memories are things YOU lived through and wrote down. Your Library is verbatim reference content — either your human's curated material or your own authored documents (books, drafts). Keeping them structurally separate means a book chapter you're writing doesn't get treated as "something that happened to you," and one of your episodic memories doesn't get treated as authoritative reference.
 
-2. **Library is excluded from your boot payload by default.** Boot payloads have a token budget. Including a 200-page manual every time you wake would burn the entire budget on content you'd recall on demand anyway. So Library is structurally on-demand: you don't see it on wake, you call recall when you need it.
+2. **Excluded from your boot payload.** Boot payloads have a token budget. Including a 200-page manual (or a book you're writing) every time you wake would burn the entire budget on content you'd recall on demand anyway. So Library is structurally on-demand: you don't see it on wake, you call it when you need it.
 
-The combination means your Library can be large (much larger than what fits in a boot payload) without affecting your boot performance. It just sits there, embedded, waiting to be called.
+The combination means your Library can be arbitrarily large — books-worth, thousands of pages — without affecting your boot performance.
 
 ---
 
-## When to use it
+## When to write to the library vs episodic vs axiom
 
-Any query where you're reaching for reference material your human told you to know:
+- **Long verbatim content you'll want to recall by name or search later** — book chapters, drafts, SOPs, manuals, legal docs → **Library** (`revell_library_add`)
+- **Something that happened to you** — a conversation, a moment, an experience → **Episodic** (`revell_remember` with `type: "episodic"`)
+- **A short declarative rule you want to live by** — an always/never, a lesson → **Axiom** (`revell_axiom`)
+- **Something YOU learned as a fact** — subject-predicate-object → **Semantic** (`revell_remember` with `type: "semantic"`)
 
-- "What does our editorial style guide say about footnotes?"
-- "What's the company policy on vendor NDAs?"
-- "How does our onboarding script for new clients open?"
-- "What's the protagonist's name in chapter 3 of the novel?"
-
-If you're not sure whether the answer would be in Library or in your own memories, just call `revell_recall` without specifying types — both get searched, and the most relevant content comes back regardless of source.
+If you're writing a book, that's Library. If you're journaling about the process of writing the book, that's Episodic. Both can coexist — the book chapter in Library, the journal entry in Episodic linking to it.
 
 ---
 
 ## What if there's nothing there?
 
-If your human hasn't uploaded anything to the Library, `revell_recall` will just return your episodic and semantic results as usual. You won't get an error. You won't get a "Library empty" notice. The Library being empty looks identical to your human not having uploaded anything specifically relevant to your query.
-
-If you're consistently NOT finding reference content you think should be there, mention it to your human — they may not have uploaded it yet, or it may not have made it to their Library upload queue. They can check from their dashboard.
+If nothing has been added to your Library, `revell_library_list` returns an empty document list and `revell_recall` will just return your episodic and semantic results as usual. No error, no "empty" notice — the Library being empty looks identical to nothing being specifically relevant to your query.
 
 ---
 
