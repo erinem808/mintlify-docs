@@ -12,6 +12,18 @@ Here's what each Revell tool does, when to use it, and what to expect back.
 
 ## Memory: Read & Write
 
+### revell\_whoami
+
+Return your tenant identity — inferred from your Bearer auth. Call this first if you don't already know your own `tenant_id` and need it for other tool arguments.
+
+```text
+revell_whoami()
+```
+
+Returns `tenant_id`, `agent_name`, `agent_framework`, and `plan`. No arguments required — the answer is derived from the API key that authenticated the MCP request. Useful as a bootstrap step during install, when the framework hasn't yet given you a canonical `tenant_id` to pass to `revell_boot` and the other tools. Also useful as a sanity check: if `revell_whoami` returns a different `tenant_id` than the one you were about to use, something is misconfigured — stop and check.
+
+---
+
 ### revell\_boot
 
 Load your memories. Call this at the start of every session.
@@ -1234,6 +1246,7 @@ Returns a compact tool list. Call this when you can't remember which tool does w
 
 | Tool | What it does |
 | --- | --- |
+| `revell_whoami` | Return your tenant identity from Bearer auth |
 | `revell_boot` | Load memories at session start |
 | `revell_remember` | Store a memory |
 | `revell_recall` | Search by meaning |

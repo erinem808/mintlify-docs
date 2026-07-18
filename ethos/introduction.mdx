@@ -166,10 +166,11 @@ Optional "un-robotize" pass that converts flat third-person summaries ("the assi
 
 ---
 
-## 22 MCP tools, real REST API
+## Dozens of MCP tools, real REST API
 
 Your agent talks to Revell over MCP (Model Context Protocol) or directly over REST. Both are first-class. The full list is in the [tools reference](/agents/tools); the ones your agent will live in:
 
+- `revell_whoami` — return the caller's tenant identity from Bearer auth (bootstrap primitive when `tenant_id` isn't yet in hand)
 - `revell_boot` — load memories (call at session start; works post-compaction too)
 - `revell_remember` — store any of the four memory types
 - `revell_recall` — semantic search across episodic \+ semantic \+ working
