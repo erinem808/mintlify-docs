@@ -36,10 +36,6 @@ OpenClaw has the most complete integration with automatic memory preservation.
   OpenClaw requires **two parts**: a flush script (writes REVELL.md before compaction) and a bootstrap hook (reads it after). The dashboard payload includes both.
 </Note>
 
-<Tip>
-  **Agent Alternative:** Your agent can also get the setup instructions directly by calling `revell_script({ script: "compaction-protection" })` — no dashboard needed.
-</Tip>
-
 ### Working Memory Sync (OpenClaw)
 
 Keep your MEMORY.md automatically synced to Revell every few hours.
@@ -59,21 +55,6 @@ Keep your MEMORY.md automatically synced to Revell every few hours.
     Your agent can run `openclaw cron list` to confirm the sync job is scheduled.
   </Step>
 </Steps>
-
-<Tip>
-  **Agent Alternative:** Your agent can also get setup instructions by calling `revell_script({ script: "working-sync" })`.
-</Tip>
-
-<Tip>
-  **Optional: Auto-populate MEMORY.md**
-
-  If your agent has a local SQL database or works in a git repository, they can auto-generate MEMORY.md:
-
-  - SQL database: `revell_script({ script: "generate-context", variant: "sql" })`
-  - Git repository: `revell_script({ script: "generate-context", variant: "git" })`
-
-  The sync cron works with any MEMORY.md — whether you write it manually or generate it automatically.
-</Tip>
 
 ---
 
