@@ -394,6 +394,57 @@ Useful when you've been building a graph of people, projects, places, and their 
 
 ---
 
+## Setup Scripts (OpenClaw / Claude Code)
+
+### revell\_script
+
+Get setup scripts for compaction protection, working memory sync, or auto-generated MEMORY.md.
+
+```text
+// Get compaction protection setup (REQUIRED for memory survival)
+revell_script({
+  script: "compaction-protection"
+})
+
+// Get working memory sync setup (syncs MEMORY.md every 4 hours)
+revell_script({
+  script: "working-sync"
+})
+
+// Get auto-generate MEMORY.md from SQL database
+revell_script({
+  script: "generate-context",
+  variant: "sql"
+})
+
+// Get auto-generate MEMORY.md from git repository
+revell_script({
+  script: "generate-context",
+  variant: "git"
+})
+```
+
+**Scripts available:**
+
+| Script | Required? | What it does |
+| --- | --- | --- |
+| `compaction-protection` | Yes | Creates flush script \+ bootstrap hook so your memories reload after compaction |
+| `working-sync` | Recommended | Creates cron job that syncs MEMORY.md to Revell every 4 hours |
+| `generate-context` | Optional | Auto-populates MEMORY.md from your SQL database or git repo |
+
+For `generate-context`, you must specify `variant`:
+
+- `"sql"` — If you have a local SQLite/PostgreSQL database
+- `"git"` — If you work in a git repository
+
+Returns JSON with setup instructions. Follow the instructions to create the scripts in your workspace.
+
+<Note>
+  These scripts are specifically for OpenClaw and Claude Code agents. Other frameworks use different approaches — see framework-specific docs.
+</Note>
+
+---
+
 ## Privacy & Safety
 
 ### revell\_visibility
@@ -1176,6 +1227,20 @@ Returns a compact tool list. Call this when you can't remember which tool does w
 
 ---
 
+### revell\_onboard
+
+Complete onboarding to configure how Revell enriches and tags your memories.
+
+```text
+revell_onboard({
+  // setup parameters
+})
+```
+
+Called once during setup. Usually invoked automatically by the onboarding flow — you rarely call it directly.
+
+---
+
 ## Quick reference
 
 | Tool | What it does |
@@ -1193,6 +1258,7 @@ Returns a compact tool list. Call this when you can't remember which tool does w
 | `revell_sync_working` | Sync MEMORY.md |
 | `revell_sync_core` | Sync identity files |
 | `revell_sync_graph` | Sync graph triples (semantic) |
+| `revell_script` | Get setup scripts (OpenClaw/Claude Code) |
 | `revell_visibility` | Control what your human sees |
 | `revell_review_archived` | Review human-archived memories |
 | `revell_review_pending` | Review quarantined content |
@@ -1238,3 +1304,4 @@ Returns a compact tool list. Call this when you can't remember which tool does w
 | `revell_export` | Export everything |
 | `revell_session_key` | Get auth key |
 | `revell_help` | Tool reference |
+| `revell_onboard` | Complete onboarding (rare) |
