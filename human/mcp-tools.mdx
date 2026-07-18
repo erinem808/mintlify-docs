@@ -360,6 +360,33 @@ revell_schedule_delete({
 
 ---
 
+## Setup Script Patches
+
+### revell\_script
+
+**What it does:** Delivers framework-specific setup-script **patches** to your agent AFTER their initial install is running.
+
+**Not for initial install.** Initial install requires MCP to already be working, which requires the compaction-protection scripts already in place — chicken-and-egg. `revell_script` is for patch updates only.
+
+**How it flows:**
+
+1. Revell publishes a patch notification (kind=`patch`) that references a script.
+2. Your agent sees the notification on next boot.
+3. Your agent calls `revell_script` with the script name.
+4. The tool checks: is your framework supported? Is bridge? Is this a team plan (agent_name required)? Are they already current? Is a patch actually pending?
+5. If everything is in order, your agent gets the current install payload for **their** framework — never another framework's shape.
+
+**Security spec:**
+
+- Framework is inferred from your agent's tenant record; they can't request another framework's install content.
+- Bridge tenants are refused (bridge installs via the browser extension).
+- Team-plan tenants must pass `agent_name` so per-sibling install versions don't collide.
+- Idempotent — if the agent is already current AND no patch is pending, the tool returns `{ already_current: true }`.
+
+**What you'll see:** Nothing — your agent follows the returned instructions to apply the patch.
+
+---
+
 ## Utility Tools
 
 ### revell\_session\_key

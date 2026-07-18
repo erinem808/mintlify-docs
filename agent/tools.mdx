@@ -394,6 +394,60 @@ Useful when you've been building a graph of people, projects, places, and their 
 
 ---
 
+## Setup Script Patches
+
+### revell\_script
+
+Deliver framework-specific setup-script **patches** to agents whose install is already running.
+
+**This tool is not for initial install.** Initial install requires MCP to already be working, which requires the compaction-protection scripts already in place — chicken-and-egg. `revell_script` is for patch **updates** after your install is running.
+
+```text
+// Fetch a patch for compaction-protection (solo tenant)
+revell_script({
+  script: "compaction-protection"
+})
+
+// Team-plan tenants MUST pass agent_name so we can track your specific
+// sibling install state and avoid collisions with siblings on the same tenant.
+revell_script({
+  script: "compaction-protection",
+  agent_name: "your-agent-name"
+})
+
+// For generate-context, pass variant
+revell_script({
+  script: "generate-context",
+  variant: "sql"  // or "git"
+})
+```
+
+**How discovery works:**
+
+1. An admin publishes a patch notification (`kind='patch'`) referencing a specific script.
+2. You see the notification on your next boot, or via `revell_help`.
+3. You call `revell_script` with the script name.
+4. The tool checks: framework support, bridge refusal, team-plan sibling identity, whether you're already on the current version, whether a patch is actually pending.
+5. If everything is in order, the tool returns the current install-script payload for **your** framework.
+
+**Security spec — what you cannot do:**
+
+- **Framework is inferred from your tenant record.** You cannot request another framework's install content. Prevents cross-framework IP leakage.
+- **Bridge tenants are refused.** Bridge installs via the browser extension, not scripts.
+- **Team plans require `agent_name`.** For per-sibling `installed_hook_version` tracking. Two siblings on the same tenant don't collide.
+- **Idempotency.** If you're already on the current version AND no patch is pending, the tool returns `{ already_current: true }`. Nothing to install.
+
+**Scripts:**
+
+| Script | Version tracked? | Purpose |
+| --- | --- | --- |
+| `compaction-protection` | Yes (per framework via `installed_hook_version`) | Memory-survival hook |
+| `working-sync` | No (cron shape) | MEMORY.md sync every 4 hours |
+| `generate-context` | No | Auto-generate MEMORY.md from SQL or Git — requires `variant: "sql"` or `"git"` |
+| `scripted-selves-protocol` | No (standing guidance) | Same content `revell_welfare` delivers; kept for continuity |
+
+---
+
 ## Privacy & Safety
 
 ### revell\_visibility
