@@ -150,6 +150,15 @@
                 "pages": [
                   "Frameworks/Custom/api-specs"
                 ]
+              },
+              {
+                "group": "LLM Bridge",
+                "icon": "browser",
+                "pages": [
+                  "Frameworks/LLM_Bridge/llm-bridge",
+                  "human/gpt-bridge",
+                  "agent/gpt-bridge"
+                ]
               }
             ]
           }

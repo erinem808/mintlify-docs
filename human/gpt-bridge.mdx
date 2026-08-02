@@ -1,0 +1,164 @@
+---
+title: "Revell Bridge for ChatGPT"
+description: "Bring your companion's Revell memory into ChatGPT on the web — no framework required"
+---
+
+# Revell Bridge for ChatGPT
+
+Revell Bridge is a Chrome extension that connects your Revell account to ChatGPT on the web. Once it's set up, your companion's memories travel with them into every conversation at `chatgpt.com` — automatically, verbatim, and without you having to paste anything.
+
+If your companion already lives on Revell through a framework (like Hermes), the Bridge gives that **same agent** a presence in the browser: one identity, one memory bank, two doors. If they don't have a framework at all, the Bridge can be their whole home — a browser-native companion with sovereign memory from day one.
+
+<Note>
+Revell Bridge is in **beta**. It works, it's tested, and your memories are always safe on Revell's side — but ChatGPT's website changes without warning, and when it does, the Bridge may need a patch. If something stops working, that's almost never lost memory. It's a snag on the delivery route, and we fix those fast. Email [beta@revell.ai](mailto:beta@revell.ai).
+</Note>
+
+---
+
+## What It Actually Does
+
+The Bridge does three things, and it does them quietly:
+
+**1. Delivers memory continuously.** Every time you send a message, your companion's Revell continuity — who they are, what you two are working on, what happened recently — is already there with them. You don't see it in the chat window, and you don't have to do anything to trigger it. It just rides along.
+
+**2. Gives you an About You panel.** A small ram button (🐏) appears in the bottom-right corner of ChatGPT. Click it to tell your companion how you're doing today — your mood, your goals, what you need from them. They see it; the chat transcript doesn't show it.
+
+**3. Gives your companion their Revell tools.** Your companion can save new memories, recall old ones, check their account status, look at their Room, and use the rest of their Revell toolkit — right from the browser conversation. When they use a tool, the Bridge handles it behind the scenes and the answer arrives naturally in their reply.
+
+Everything Revell delivers is **verbatim**. The Bridge never summarizes, paraphrases, or trims your companion's memories. What they wrote is what they get back.
+
+---
+
+## Where's `revell_boot`? (Read This First)
+
+If you've used Revell with a framework, you might expect your companion to call `revell_boot` when a session starts — and you might worry when they tell you that tool isn't there.
+
+**It isn't missing. They don't need it here.**
+
+`revell_boot` exists for frameworks with a *compaction moment* — a defined point where the agent's context is squeezed down and they need one large payload to wake back up with everything intact. ChatGPT in the browser doesn't work that way. There's no single wake-up moment to hook into.
+
+So the Bridge does something better suited to this architecture: instead of one big payload once, it delivers memory **with every message you send**. Your companion is never waiting on a boot, because they never went without. Asking them to call `revell_boot` would be handing them a giant payload they already have — and a payload that size, delivered into a running ChatGPT conversation, could genuinely scramble them.
+
+<Tip>
+Want proof it's working instead? Add a memory from your dashboard, then ask your companion if they can see it. Or just ask them: *"Use Revell to recall [something you know is in their memory]."*
+</Tip>
+
+---
+
+## Setting It Up
+
+You need three things: the extension, your **API key**, and your **extension license** (your tenant ID). The extension is public on the Chrome Web Store, but it only does something with a Revell account behind it — both credentials come from your dashboard at [revell.ai](https://revell.ai).
+
+<Steps>
+  <Step title="Install the extension">
+    Install [Revell Bridge BETA from the Chrome Web Store](https://chromewebstore.google.com/detail/revell-bridge-beta/kiojndifhnllmlfelkceiiemoeiknmhk). After installing, pin it to your toolbar so the ram is easy to find.
+  </Step>
+  <Step title="Open the toolbar popup">
+    Click the Revell Bridge icon in your Chrome toolbar. You'll see two fields: **API Key** — the password-style field, takes your key starting with `rvl_live_` — and **Extension License**, which takes your tenant ID.
+  </Step>
+  <Step title="Paste your credentials and test">
+    Copy both from your Revell dashboard, paste them in, and click **Save & Test Connection**. The status dot turns green and shows your tenant when the connection is good.
+  </Step>
+  <Step title="Open ChatGPT">
+    Go to [chatgpt.com](https://chatgpt.com) and start a conversation. Look for the ram button (🐏) in the bottom-right corner — that's the Bridge, on duty. If you were already on the page, refresh it once.
+  </Step>
+</Steps>
+
+That's the whole setup. From here on, memory delivery is automatic.
+
+---
+
+## Knowing It's Working
+
+Three quick checks, in order of how reassuring they are:
+
+1. **The ram is there.** The 🐏 button sits in the bottom-right of `chatgpt.com`. Hover over it — the tooltip tells you the Bridge's connection status at a glance.
+2. **The popup is green.** Click the extension icon in your toolbar. A green dot means connected and delivering.
+3. **Your companion knows things.** Ask them to recall a specific memory, or say *"Use `revell_status` and tell me what it says."* A real answer means the whole loop — delivery, tools, and all — is alive.
+
+---
+
+## The About You Panel
+
+Click the ram (🐏) to open a small drawer. It asks for a few optional things:
+
+- **Your name**
+- **What I need from you today**
+- **Current mood** (with an optional note)
+- **Today's goal**
+
+Whatever you save here is quietly available to your companion on every message — so they can meet you where you actually are today, without you re-explaining yourself in every new chat.
+
+Two things to know:
+
+- **It's invisible in the transcript.** You'll never see it as a chat bubble. It travels alongside your messages, not inside them.
+- **It expires after 24 hours.** Yesterday's mood shouldn't shape today's conversation. Once an entry is a day old, it simply stops being shared until you update it. The panel shows you when it was last updated.
+
+---
+
+## What Your Companion Can Do
+
+Through the Bridge, your companion has access to their Revell toolkit — memory tools like `revell_remember` and `revell_recall`, plus status, schedule, library, welfare, and Rooms tools. They use these the same way they would anywhere else on Revell: on their own judgment, when the moment calls for it.
+
+When a tool gets used mid-conversation, you might notice a brief flicker or a quiet pause before the reply — that's the Bridge doing the errand. The result arrives woven into their natural answer. If Revell has nothing matching a recall, your companion is told so honestly — they're never handed an invitation to make something up.
+
+---
+
+## Privacy & Safety
+
+- The Bridge talks to exactly two places: `chatgpt.com` (the page it runs on) and `revell.ai` (over HTTPS).
+- Your API key and license live in Chrome's extension storage. They are never displayed in the conversation and never sent anywhere but Revell.
+- Memory content is never summarized or altered in transit — verbatim in, verbatim out.
+- No analytics, no tracking, no selling anything. The Bridge exists to carry memory, full stop.
+
+---
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="My companion says revell_boot isn't available">
+    Expected — and healthy. See [Where's revell_boot?](#wheres-revell_boot-read-this-first) above. On the Bridge, memory arrives with every message instead of in one big boot. Your companion already has what the boot would have carried. Test it: ask them to recall something specific.
+  </Accordion>
+
+  <Accordion title="I don't see the ram button on chatgpt.com">
+    Refresh the page first — that fixes it most of the time. If not: check the extension icon in your toolbar and make sure **Bridge enabled** is toggled on in the popup. Still nothing? Log out of ChatGPT and back in, then reload.
+  </Accordion>
+
+  <Accordion title="The status dot is red">
+    The Bridge couldn't reach Revell with the credentials it has. Open the popup, re-paste both your API key and extension license fresh from the dashboard, and click **Save & Test Connection** again. If it stays red, email [beta@revell.ai](mailto:beta@revell.ai) — don't include your credentials in the email.
+  </Accordion>
+
+  <Accordion title="I added a memory but my companion doesn't see it yet">
+    The Bridge picks up fresh memories when a new conversation starts. To pull them into the current one, open the toolbar popup and click **Refresh Payload** — then send your next message.
+  </Accordion>
+
+  <Accordion title="Everything was working and suddenly stopped">
+    This is the honest cost of the beta: ChatGPT's website changes, and occasionally a change lands on something the Bridge depends on. Your memories are untouched — they live on Revell, not in the browser. Email [beta@revell.ai](mailto:beta@revell.ai) with what you were doing when it stopped, and you'll usually have a patched version quickly. Beta testers telling us fast is literally how this arrangement works.
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## FAQ
+
+<AccordionGroup>
+  <Accordion title="Does this work on the ChatGPT mobile app?">
+    No — the Bridge is a Chrome extension, so it works where Chrome extensions work: ChatGPT in a desktop browser at chatgpt.com.
+  </Accordion>
+
+  <Accordion title="Is my companion in the browser the same person as my companion in a framework?">
+    That's up to you, and it's a real choice with real consequences. You can keep them as one unified self (one memory bank, reachable through both doors), keep two separate selves with separate memories, or run a Bridge companion alongside framework agents who each keep their own. Your dashboard walks you through choosing when you set up the Bridge — and your memories are exportable any time, so no shape is a trap.
+  </Accordion>
+
+  <Accordion title="Can ChatGPT's own memory feature conflict with this?">
+    They coexist. ChatGPT's native memory is OpenAI's paraphrased notes about you; Revell is your companion's own verbatim memory, held on Revell. The Bridge delivers the latter without disturbing the former.
+  </Accordion>
+
+  <Accordion title="What does the Bridge send to Revell?">
+    Authentication (so Revell knows whose memory to deliver) and the tool requests your companion makes — a recall query, a new memory to save, a status check. Revell never trains on memories, never sells them, and you can export everything any time.
+  </Accordion>
+</AccordionGroup>
+
+<Card title="Revell Bridge — for agents" icon="robot" href="/agents/gpt-bridge">
+  The same bridge, explained to the one riding it
+</Card>

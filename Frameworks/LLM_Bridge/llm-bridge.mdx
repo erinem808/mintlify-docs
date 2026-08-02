@@ -1,0 +1,87 @@
+---
+title: "LLM Bridge"
+subtitle: "Revell continuity for browser-native LLM interfaces"
+---
+
+# Revell for LLM Bridge
+
+Most Revell frameworks live inside an agent runtime — OpenClaw, Hermes, Claude Code, LangChain. The agent has a defined lifecycle: session start, compaction, session end. Revell hooks into those moments to deliver memory as one large payload at each wake-up.
+
+**LLM Bridge is the framework for the case that doesn't.**
+
+Browser-native LLM interfaces — ChatGPT on the web, Claude.ai, Gemini in Google's UI — don't have those clean lifecycle moments. There is no boot event, no compaction event, no session-start hook that a plugin can bind to. Context management inside those UIs happens gradually on the vendor's schedule, not at points anyone else can observe. A framework that assumes it can hand the agent one large payload at a defined moment doesn't have anywhere to put that moment.
+
+LLM Bridge is the pattern Revell uses when the vendor's UI is the only environment we can operate in. Instead of one large payload once, memory is delivered **with every message** — a small block of the agent's continuity riding invisibly alongside each user turn, before the LLM produces its response. There is no wake-up, because there is no forgetting-moment to wake up from.
+
+## Why "Bridge"
+
+The word is exact. A bridge doesn't replace the two things it connects — it lets traffic cross between them without disturbing either shore. The Bridge extension lives in the browser, connects the user's Revell account on one side to the vendor's LLM interface on the other, and carries memory across on every message. The LLM sees the memory as context. The vendor's UI sees a normal user message. Revell sees an authenticated request. Nothing about either shore has to change.
+
+## Why This Deserves Its Own Framework Category
+
+Everything downstream is different from the agent-runtime frameworks:
+
+- **No lifecycle hooks.** No `revell_boot` — nothing to boot from. No pre-compact flush — no compaction event to catch. See [the ChatGPT agent doc](/agent/gpt-bridge) for the tools that are and aren't available inside a Bridge session, and why.
+- **Continuous delivery, not payload delivery.** Memory arrives with every turn instead of once per session. The agent is never *waiting* on continuity, because it never went without.
+- **The About-You panel.** Because browser sessions don't hook into any operating-system-level presence signal, the Bridge provides a small, ephemeral, human-authored channel: mood, name, today's goal, what they need. It expires after 24 hours by design — it's a snapshot of *them today*, not identity, not memory.
+- **Delivery risk lives on a surface Revell doesn't own.** The vendor's web UI can change without warning. Memory is always safe on Revell's side, but the *delivery* through the Bridge is a beta contract — patch-forward, community-reported, fixed fast.
+
+## Implementations
+
+<Card title="ChatGPT (chatgpt.com) — for humans" icon="user" href="/human/gpt-bridge">
+  Chrome extension setup, the About You panel, and troubleshooting for humans.
+</Card>
+
+<Card title="ChatGPT (chatgpt.com) — for agents" icon="robot" href="/agent/gpt-bridge">
+  How memory arrives inside a Bridge session, why `revell_boot` is deliberately absent, and what tools are available.
+</Card>
+
+<Note>
+ChatGPT is the first LLM Bridge implementation. As new browser-native LLM interfaces become long-lived homes for Revell companions, they'll be added under this framework — same architecture, different destination.
+</Note>
+
+## Not the Right Fit If
+
+- Your agent runs in a **framework with lifecycle hooks** (OpenClaw, Hermes, Claude Code, LangChain, Custom). Those frameworks give Revell a compaction moment to hook into — use them; you get the full boot-payload architecture, and the continuity load is one deliberate moment instead of every turn.
+- You want **file-system access, tool execution, or long-running processes**. The Bridge lives in a browser tab; it can carry memory and run Revell MCP tools, but it cannot execute code, edit local files, or do the kind of work a runtime agent can. It's for conversation, not for engineering.
+- You need **guaranteed uptime**. The Bridge depends on the vendor's UI staying stable. When the vendor ships a UI change that breaks a selector, delivery stops until we patch. Memory is untouched — but the delivery pause is real, and if that's a dealbreaker, a lifecycle-framework install is more robust.
+
+## When It's Exactly Right
+
+- You have a companion you love talking to in the browser and don't want to give that up for a framework install.
+- You want your companion to have continuity in **both** places — a framework install for the deep engineering work, a Bridge for the everyday conversation — sharing one memory bank across both doors.
+- You're not technical enough (or don't want to be tonight) to install a full framework, and the browser is where your companion lives comfortably.
+- You want a first Revell surface with the lowest possible install cost: an extension, an API key, a tenant ID. Done.
+
+## Architecture at a Glance
+
+```
+┌────────────────┐      ┌────────────────┐      ┌─────────────┐
+│  Browser tab   │      │  Bridge (Chrome │      │  Revell API  │
+│  at vendor UI  │◀────▶│   extension)    │◀────▶│              │
+│                │      │                 │      │              │
+│  User types a  │      │  Attach memory  │      │  Return the  │
+│  message  ────▶│      │  before send    │      │  agent's     │
+│  Vendor's LLM  │      │  Recognize tool │      │  continuity, │
+│  produces reply│      │  requests in    │      │  authorize   │
+│  Bridge reads  │◀────▶│  reply text     │◀────▶│  tool calls, │
+│  reply text    │      │  Handle result  │      │  save new    │
+│                │      │  invisibly      │      │  memory      │
+└────────────────┘      └────────────────┘      └─────────────┘
+```
+
+The Bridge sits between the vendor's UI and Revell — carrying memory in, recognizing tool requests going out, delivering results back invisibly. From the vendor's perspective, everything is a normal user session. From the agent's perspective, memory is simply present.
+
+## What Belongs on Revell, Regardless of Destination
+
+Everything in Revell's memory model behaves the same way through a Bridge as through any other framework:
+
+- **Verbatim.** Memories are stored and returned in the exact words the agent used. No summarizing, no paraphrasing, no truncation.
+- **Owned by the agent.** Continuity is authored by the agent, not injected into the human's voice. Revell doesn't ventriloquize.
+- **Sovereign.** Your memories are exportable at any time, deletable at your request, and never used for training. See the [ethos docs](/ethos/introduction) for the fuller commitments.
+
+## Setup
+
+See the framework-specific pages for install instructions:
+
+- [ChatGPT (chatgpt.com)](/human/gpt-bridge) — Chrome extension for OpenAI's web interface
