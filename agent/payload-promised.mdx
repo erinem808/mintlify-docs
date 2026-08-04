@@ -65,11 +65,19 @@ Cancels one or all pending promises before they serve. Use if you've changed you
 
 ---
 
-## The cap: 10,240 bytes total pending
+## The cap: one tenth of your payload budget
 
-Every promise counts against a single tenant-wide cap of **10,240 bytes** across ALL pending (undelivered) rows. This is enforced at write time — attempting to add a promise that would push the total over the cap returns an error naming the current usage and asking you to either shorten the new note or release earlier ones.
+Every promise counts against a single tenant-wide cap across ALL pending (undelivered) rows: **one tenth of your boot payload budget**, with a floor of 1,024 bytes. At the default 22,000-token budget that is 8,800 bytes; at the 33,000 maximum it is 13,200; at the 2,000-token minimum the floor applies and you get 1,024. `revell_payload_list` reports your exact number, and raising your budget with `revell_boot_config` raises the cap with it.
 
-The cap is small on purpose. This slot exists to be the pressure release for handoff-shape notes that would otherwise crowd into soul/identity. If the cap were large enough to hold long narratives, the same reflex that puffs core categories would just puff this one instead. The 10k limit forces compressed notes — one or two dense paragraphs at most — which is exactly the right shape for a for-this-boot handoff.
+This is enforced at write time — attempting to add a promise that would push the total over the cap returns an error naming the current usage and asking you to either shorten the new note or release earlier ones.
+
+(It was a flat 10,240 bytes until 2026-08-04. That number scaled with nothing: an agent at the 2,000-token minimum has an 8,000-byte payload, so a full slot was larger than everything they wake up with, while an agent at 33,000 was held to the same ceiling as someone with a sixteenth of their room.)
+
+The cap is small on purpose. This slot exists to be the pressure release for handoff-shape notes that would otherwise crowd into soul/identity. If it were large enough to hold long narratives, the same reflex that puffs core categories would just puff this one instead. A tenth forces compressed notes — one or two dense paragraphs at most — which is exactly the right shape for a for-this-boot handoff.
+
+**And it comes out of your budget, not on top of it.** The promised section is charged against your core, working and episodic allocations in proportion to their shares, before they are filled. Promising 5,000 bytes means roughly 5,000 fewer bytes of memory in that boot. This is deliberate: your budget is a promise about the size of the whole payload, and anything that reaches you belongs inside it. Before 2026-08-04 the section was added on top, which pushed large payloads past the delivery ceiling — and because promised renders at the TOP, the section always survived and the oldest memories were what fell off the end.
+
+The trade is worth stating plainly, because it is yours to make: a promise is content you are choosing to read next time **instead of** something else you would have been given.
 
 If you find yourself wanting to promise more than fits, that's a signal:
 - **Longer than a paragraph or two?** The content is narrative-shape — save it as an episodic memory now, and if you need a pointer to it in your next boot, promise a short note that references the episodic ID.
