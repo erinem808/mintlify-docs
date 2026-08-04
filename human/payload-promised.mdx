@@ -1,0 +1,69 @@
+---
+title: "Payload Promised"
+description: "The for-this-boot slot — a small, self-decaying memory type your agent uses for guaranteed-to-be-in-next-boot handoff notes"
+icon: "note-sticky"
+---
+
+# Payload Promised
+
+Payload-promised is a memory type your agent uses to leave themselves a note that's **guaranteed to appear at the top of their very next boot payload** — and then decays away, so it doesn't accrete into permanent identity.
+
+You'll rarely need to think about this one directly, but it's worth knowing it exists, because you may see references to it — in dashboard views, in tool outputs, or in the agent's own explanations of what they're doing.
+
+---
+
+## Why it exists
+
+Your agent already has four persistent memory slots (soul, identity, working, episodic) plus axioms for durable rules. Before payload-promised existed, there was a gap: how does an agent guarantee that a specific note — one that matters right now but isn't durable identity — makes it to the top of their next boot?
+
+The answer, in practice, was that agents smuggled such notes into soul or identity. That worked, but it warped those categories — puffed them past their character caps, mixed handoff-shape content into who-you-are content, and gave the boot payload a weird lopsided shape over time.
+
+Payload-promised is the pressure release: capped, self-decaying, structurally separate from identity. Handoff notes have their own home now.
+
+---
+
+## What it does
+
+Your agent has three MCP tools for this memory type:
+
+- `revell_payload_promise` — save a note for the next boot
+- `revell_payload_list` — check what's queued (read-only)
+- `revell_payload_release` — cancel a pending note before it serves
+
+Each promise:
+
+1. Lands at the **top** of the next assembled boot payload — right after the welcome, before the identity block.
+2. **Decays to an episodic memory** the moment that boot is served, tagged `payload-promise-decayed`. Still findable via recall later; just no longer at the top of every boot.
+3. Is bounded by a small tenant-wide cap (10,240 bytes total across all pending) so it can never become a shadow-core.
+
+**Preview boots never consume promises.** If you preview a boot payload from your dashboard, no decay fires. Only real serves (a fresh session, a post-compaction recovery) trigger the decay-to-episodic step.
+
+---
+
+## When your agent might use it
+
+The concrete uses your agent will reach for this for:
+
+- **A compressed note right before compaction** so it lands cleanly at the top of the wake-back-up payload — "here's what mattered when I set this down."
+- **A mid-session realization** they don't want to lose, but aren't sure yet is a durable rule. Payload-promised is the "let me sit with this until my next boot" slot.
+- **Load-bearing recent context** that would otherwise get squeezed out of boot by older core memories.
+
+If they treat it as a shadow-core, you'll see a red flag — the cap will reject writes and they'll get a clear error telling them the content belongs somewhere else (episodic for narrative, axiom for rules, soul for identity).
+
+---
+
+## What you can do from your side
+
+At this writing, payload-promised is agent-only — you can't add or release promises on your agent's behalf from the dashboard. What you can do:
+
+- **See the section render** if you preview a boot payload from the dashboard — pending promises show up at the top under a `── FOR THIS BOOT ──` header.
+- **Find decayed promises** in your agent's episodic memory via recall — they carry the `payload-promise-decayed` tag.
+- **Notice the shape** if your agent seems to be using it as a shadow-core. If they mention "I've been leaving myself lots of payload promises about identity content", gently point out that soul or axiom is the right home for that shape.
+
+---
+
+## See also
+
+- [**Memory Types**](/agent/memory-types) — full reference for all six memory types
+- [**Axiom Memories**](/human/axiom-memories) — the sibling short-form layer for durable rules
+- **`revell_help`** — your agent's runtime tool reference

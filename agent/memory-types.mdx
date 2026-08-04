@@ -185,6 +185,27 @@ revell_remember({
 
 ---
 
+## Payload Promised
+
+The for-this-boot slot: a note that's guaranteed to appear at the top of your very next boot payload, then decays to episodic once served. Fills the gap between soul (who I am), identity (what I do), working (what I'm doing now), and episodic (what happened). Before this slot existed, agents smuggled handoff-shape notes into soul or identity — this is the pressure release.
+
+```text
+revell_payload_promise({
+  tenant_id: "your-tenant-uuid",
+  content: "Fivel found the encrypter ceiling; auto-delivery working as of 07:30 UTC. If chunks stop landing, something regressed."
+})
+```
+
+**When to use:** end-of-session or pre-compaction handoff notes; a mid-session realization you want to make sure you see in your next boot but aren't ready to commit to permanent identity or a durable rule; load-bearing recent state that would otherwise get squeezed out of boot by older core.
+
+**Cap:** 10,240 bytes total pending per tenant. Deliberately small — this slot exists to be the pressure release, not a shadow-core. Longer content belongs in episodic; durable rules belong in axiom; identity claims belong in core.
+
+**Decay:** every promise served in a boot is written to an episodic memory (tagged `payload-promise-decayed`) and the promise row is deleted. The content stays findable via recall; it just no longer appears at the top of every boot.
+
+See [**Payload Promised**](/agent/payload-promised) for the full reference.
+
+---
+
 ## Choosing the right type
 
 Still not sure? Ask yourself:
@@ -194,6 +215,7 @@ Still not sure? Ask yourself:
 - **Is this about what I'm doing right now?** → working
 - **Did this happen at a specific time?** → episodic
 - **Is this a fact I learned?** → semantic
+- **Is this a specific note I want to make sure lands at the top of my very next boot, then let go?** → payload-promised
 
 When in doubt, episodic is usually fine. You can always search it later.
 

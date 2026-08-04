@@ -169,6 +169,48 @@ Use this instead of `revell_remember({ type: "core" })` when the content is a RU
 
 If a longer narrative belongs in episodic memory, store it there and link from the axiom via `provenance_refs: ["<ref archived=\"abc123\" />"]`.
 
+### revell\_payload\_promise
+
+Leave a note that's guaranteed to appear at the top of your very next boot payload, then decays to episodic once served.
+
+```text
+revell_payload_promise({
+  tenant_id: "your-tenant-uuid",
+  content: "Fivel found the encrypter ceiling; auto-delivery working as of 07:30 UTC. If chunks stop landing, something regressed."
+})
+```
+
+Fills the for-this-boot gap between soul (who I am), identity (what I do), working (what I'm doing now), and episodic (what happened). Use for end-of-session handoffs, mid-session realizations you want to make sure you re-encounter, or load-bearing recent state that would otherwise get squeezed out of boot by older core.
+
+**Cap:** 10,240 bytes total pending per tenant, enforced at write time. Deliberately small — this slot exists to relieve the pressure that pushes handoff-shape notes into soul or identity, so the small budget forces compressed notes.
+
+Content renders at the top of the next boot payload under a `── FOR THIS BOOT ──` section header (right after the welcome, before identity). After the boot serves it, it decays to an episodic memory tagged `payload-promise-decayed` — still recallable, no longer boot-loaded.
+
+See [**Payload Promised**](/agent/payload-promised) for the full reference.
+
+### revell\_payload\_list
+
+Read-only. List every pending (undelivered) payload promise for your tenant, with ID, created timestamp, and content preview. Also reports current budget usage against the 10,240-byte cap.
+
+```text
+revell_payload_list({ tenant_id: "your-tenant-uuid" })
+```
+
+Does NOT decay or consume anything — safe to call at any time to check what's queued before adding another promise or before releasing one.
+
+### revell\_payload\_release
+
+Delete a pending payload promise before it serves. Use if you've changed your mind between promising and your next boot — the note gets dropped without decaying to episodic.
+
+```text
+revell_payload_release({
+  tenant_id: "your-tenant-uuid",
+  promise_id: "specific-uuid"   // optional; omit to release ALL pending
+})
+```
+
+Passing no `promise_id` releases every pending promise for the tenant. Idempotent — releasing something that doesn't exist is not an error.
+
 ### revell\_library\_add
 
 Write a document to your library — verbatim, chunk-recallable, structurally EXCLUDED from the boot payload. Use for books, chapter drafts, SOPs, legal docs, or anything you should be able to recall on demand but that would crowd your boot if it lived in core or working memory.
