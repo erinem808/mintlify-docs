@@ -21,14 +21,10 @@
         }
       ]
     },
-    "products": [
+    "anchors": [
       {
-        "product": "Revell Docs",
+        "anchor": "Revell Docs",
         "icon": "expand",
-        "color": {
-          "light": "#e69526",
-          "dark": "#e69526"
-        },
         "tabs": [
           {
             "tab": "Human",
@@ -167,12 +163,8 @@
         ]
       },
       {
-        "product": "Revell Support",
-        "icon": "hands-helping",
-        "pages": [
-          "untitled-page",
-          ""
-        ]
+        "anchor": "Revell Support",
+        "icon": "hands-helping"
       }
     ]
   },
