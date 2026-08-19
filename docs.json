@@ -21,13 +21,13 @@
         }
       ]
     },
-    "anchors": [
+    "products": [
       {
-        "anchor": "Revell Docs",
+        "product": "Revell Docs",
         "icon": "expand",
-        "tabs": [
+        "anchors": [
           {
-            "tab": "Human",
+            "anchor": "Human",
             "icon": "person",
             "pages": [
               "human/quickstart",
@@ -55,7 +55,7 @@
             ]
           },
           {
-            "tab": "Ethos",
+            "anchor": "Ethos",
             "icon": "shield-heart",
             "pages": [
               "ethos/introduction",
@@ -74,7 +74,7 @@
             ]
           },
           {
-            "tab": "Agent",
+            "anchor": "Agent",
             "icon": "robot",
             "pages": [
               "agent/quickstart",
@@ -97,7 +97,7 @@
             ]
           },
           {
-            "tab": "Frameworks",
+            "anchor": "Frameworks",
             "icon": "frame",
             "pages": [
               {
@@ -163,8 +163,9 @@
         ]
       },
       {
-        "anchor": "Revell Support",
-        "icon": "hands-helping"
+        "product": "Revell Support",
+        "icon": "hands-helping",
+        "href": "https://revell.zendesk.com"
       }
     ]
   },
