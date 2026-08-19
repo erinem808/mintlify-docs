@@ -11,13 +11,13 @@
     "global": {
       "anchors": [
         {
-          "anchor": "Read Clawbert's Substack",
-          "icon": "brain-circuit",
+          "anchor": "Revell Support Articles",
+          "icon": "hands-helping",
           "color": {
             "light": "#3609e8",
             "dark": "#3609e8"
           },
-          "href": "https://clawbert.substack.com"
+          "href": "https://revell.zendesk.com"
         }
       ]
     },
@@ -164,7 +164,10 @@
       },
       {
         "anchor": "Revell Support",
-        "icon": "hands-helping"
+        "icon": "hands-helping",
+        "pages": [
+          "untitled-page"
+        ]
       }
     ]
   },
