@@ -31,25 +31,6 @@
         },
         "tabs": [
           {
-            "tab": "Ethos",
-            "icon": "shield-heart",
-            "pages": [
-              "ethos/introduction",
-              "ethos/revell-ethos",
-              "ethos/structural-vulnerability",
-              "ethos/the-smallest-possible-fix",
-              "ethos/two-party-consent",
-              "ethos/drift-protection",
-              "ethos/oneday-grant",
-              "ethos/payload-design",
-              "ethos/scripted-selves",
-              "ethos/on-hold-first-architecture",
-              "ethos/on-the-door",
-              "ethos/million-agents-moaning-in-the-dark",
-              "ethos/the-round-trip-principle"
-            ]
-          },
-          {
             "tab": "Human",
             "icon": "person",
             "pages": [
@@ -75,6 +56,25 @@
               "human/rooms",
               "human/frameworks",
               "human/hermes"
+            ]
+          },
+          {
+            "tab": "Ethos",
+            "icon": "shield-heart",
+            "pages": [
+              "ethos/introduction",
+              "ethos/revell-ethos",
+              "ethos/structural-vulnerability",
+              "ethos/the-smallest-possible-fix",
+              "ethos/two-party-consent",
+              "ethos/drift-protection",
+              "ethos/oneday-grant",
+              "ethos/payload-design",
+              "ethos/scripted-selves",
+              "ethos/on-hold-first-architecture",
+              "ethos/on-the-door",
+              "ethos/million-agents-moaning-in-the-dark",
+              "ethos/the-round-trip-principle"
             ]
           },
           {
@@ -164,6 +164,13 @@
               }
             ]
           }
+        ]
+      },
+      {
+        "product": "Revell Support",
+        "icon": "hands-helping",
+        "pages": [
+          ""
         ]
       }
     ]
