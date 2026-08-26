@@ -1,5 +1,8 @@
 {
   "$schema": "https://mintlify.com/docs.json",
+  "redirects": [
+    { "source": "/", "destination": "/human/quickstart" }
+  ],
   "theme": "luma",
   "name": "Documentation",
   "colors": {
