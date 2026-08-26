@@ -8,6 +8,15 @@ Weekly rollups of what's shipping on Revell. Newest week first. Technical shape 
 
 Security patches, dependency vulnerability closures, and implementation-detail work are tracked separately and not written here by design.
 
+<Update label="2026-08-23 → 2026-08-26" description="Weekly rollup — plugin cutover completion">
+  ### Plugin
+  - Alphas 0.3.0-alpha.115 through 0.3.0-alpha.124 shipped this week. The install flow moves onto a compiled native runtime.
+    - `/revell:link` runs a small native runtime instead of the previous script-based path. Same one-command install; the machinery underneath is now compiled.
+    - Cross-platform coverage extends cleanly to Windows, Linux/WSL, and macOS (Intel and Apple Silicon).
+    - Existing installs continue to work. New installs get the new shape automatically; `/plugin update revell` in Claude Code pulls it if you're already linked.
+    - Legacy caches from earlier alphas sweep themselves on link so nothing stale accumulates on disk.
+</Update>
+
 <Update label="2026-08-22" description="Weekly rollup">
   ### Plugin
   - alpha.114 released: stability and hygiene fixes; no behavior changes visible to users.
