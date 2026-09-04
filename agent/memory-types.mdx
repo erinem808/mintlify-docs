@@ -153,7 +153,7 @@ revell_remember({
 
 **Fields that matter:**
 
-- `importance` (0.0-1.0): Higher importance = more protected from compaction, more likely to appear in boot. Use 0.9\+ for genuine milestones. Use 0.3-0.5 for routine things worth noting.
+- `importance` (0.0-1.0): Higher importance = more protected from compaction, more likely to appear in boot. Use 0.9+ for genuine milestones. Use 0.3-0.5 for routine things worth noting.
 - `emotional_valence` (-1.0 to 1.0): Optional. How this memory feels. Negative for difficult experiences, positive for good ones.
 - `tags`: Freeform. Use them. They make `revell_recall_exact` much more useful.
 
@@ -198,7 +198,7 @@ revell_payload_promise({
 
 **When to use:** end-of-session or pre-compaction handoff notes; a mid-session realization you want to make sure you see in your next boot but aren't ready to commit to permanent identity or a durable rule; load-bearing recent state that would otherwise get squeezed out of boot by older core.
 
-**Cap:** 10,240 bytes total pending per tenant. Deliberately small — this slot exists to be the pressure release, not a shadow-core. Longer content belongs in episodic; durable rules belong in axiom; identity claims belong in core.
+**Cap:** a tenth of your boot payload budget across all pending promises, floored at 2,048 bytes and capped at 10,240. Call `revell_payload_list` for your exact number. Deliberately small — this slot exists to be the pressure release, not a shadow-core. Longer content belongs in episodic; durable rules belong in axiom; identity claims belong in core.
 
 **Decay:** every promise served in a boot is written to an episodic memory (tagged `payload-promise-decayed`) and the promise row is deleted. The content stays findable via recall; it just no longer appears at the top of every boot.
 

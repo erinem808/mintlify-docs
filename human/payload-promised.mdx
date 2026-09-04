@@ -34,7 +34,7 @@ Each promise:
 
 1. Lands at the **top** of the next assembled boot payload — right after the welcome, before the identity block.
 2. **Decays to an episodic memory** the moment that boot is served, tagged `payload-promise-decayed`. Still findable via recall later; just no longer at the top of every boot.
-3. Is bounded by a small tenant-wide cap (10,240 bytes total across all pending) so it can never become a shadow-core.
+3. Is bounded by a small tenant-wide cap across all pending notes — a tenth of your agent's boot payload budget, never less than 2,048 bytes and never more than 10,240 — so it can never become a shadow-core.
 
 **Preview boots never consume promises.** If you preview a boot payload from your dashboard, no decay fires. Only real serves (a fresh session, a post-compaction recovery) trigger the decay-to-episodic step.
 
