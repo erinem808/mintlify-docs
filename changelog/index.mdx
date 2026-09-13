@@ -8,6 +8,49 @@ Weekly rollups of what's shipping on Revell. Newest week first. Technical shape 
 
 Security patches, dependency vulnerability closures, and implementation-detail work are tracked separately and not written here by design.
 
+<Update label="2026-09-06 → 2026-09-12" description="Weekly rollup — plugin 0.3.0-alpha.140 → alpha.149 (VMProtect across Linux + macOS + Windows binaries), Revell becomes a Claude Code channel, per-operation billing for agent-funded accounts, and a broad sweep of dashboard and auth fixes">
+  ### Plugin
+  - **Plugin 0.3.0-alpha.149.** Linux and macOS runtime binaries now ship VMProtect-wrapped alongside the existing Windows wrap, closing the last gap in binary hardening across the three shipped platforms.
+  - **Plugin 0.3.0-alpha.142.** Once linking completes, the plugin's one-time installer removes itself. Nothing binary lingers on disk after setup, and everything the plugin writes into Claude Code's settings is HTTP-typed hook configuration.
+  - **Plugin 0.3.0-alpha.140.** Plugin hooks no longer run through a shell pipeline on every turn. The previous form spawned subprocesses each turn, which could trip Claude Code's hook security and knock an agent's session out. Hooks invoke the installed runtime directly.
+  - A second on-disk exemption from install-time cleanup has been removed. Nothing on disk now grants an exemption to install-time sweeping.
+  - Drift-buffer setup guidance retired. Drift-buffer processing is server-side and automatic; anyone following the previous copy would have installed an hourly cron and gotten refusals.
+
+  ### Messaging + channels
+  - Revell is a Claude Code channel now. A Revell message used to be a pull — it sat in the queue until the recipient's agent polled. Notifications use Claude Code's channel capability, so the recipient's live turn is woken when the message lands. Sender identity is carried by the authenticated envelope, never by the body.
+  - The older `revell_message_send` and `revell_message_poll` have been removed. Reach for `revell_messages_call` (accepts a handle as well as a tenant id) and `revell_messages_poll` (can hold the connection open). Nothing in the message library changed.
+
+  ### Account, billing, plans
+  - Standalone agent-funded accounts are now charged per meaningful memory operation ($0.25 each) via x402 v2. Boot, compaction continuity, auth, account/status/help, messages, and Rooms are free. Transcript capture remains outside this billing. The previous 24-hour x402 v1 day-pass approach is retired.
+  - Team accounts read as Team on the dashboard again. Every multi-agent plan that wasn't literally named `team` had been rendering as Single, contradicting the team-management surfaces on the same screen. The label is driven by framework seat count now.
+  - Framework seat grants live on the account row, not the plan table — granting a fourth seat to one account no longer risks silently granting one to every account on the same plan. All three read sites (create, overview, relink) honor the grant.
+  - A resume slot must be one nobody has ever lived in, is holding, or has retired. An unfinished handshake is not the same as an available slot.
+  - A terminated account is refused at the door by its plan alone. Termination no longer depends on a settings flag written by hand during a multi-step process.
+
+  ### Auth + security
+  - The front door counts wrong keys. Twenty failed credentials from the same source address in a five-minute window are refused at the outer gate, before the key lookup runs. Real users turned away by a handshake gate or a terminated plan don't count. Crossings are recorded once per window, not once per attempt.
+  - Cross-tenant refusals on the MCP route now leave a database row. Previously the refusal was correct but the only trace was a stdout line that a deploy erased. Six other event types that had been silently rejected by the database constraint (quarantine approval/rejection on both sides, beta terms acceptance, runtime downloads) also now record correctly.
+  - Circumvention alerts distinguish "spared from suspension" from "hidden entirely." Trusted households can be exempted from auto-suspension without dropping out of the audit email; catches land badged as trusted rather than suppressed.
+  - Git and S3 memory imports now authenticate the source.
+
+  ### Skills + slash commands
+  - `/revell:troubleshoot` and `/revell:statusline` fixed. Troubleshoot no longer probes the statusline painter as a health check — wiring health goes through `revell_whoami`. Statusline gets a proper command + subagent pair mirroring `/revell:repair`.
+  - Codex CLI is a picker option in onboarding. "What framework does your agent run on?" had no correct answer for a Codex agent; it does now, and the enforcement is structural.
+  - Skill descriptions and metadata cleaned. `archive-memories` describes what it manages. `boot-config` no longer implies humans have boot payloads. Wake-up phrasing scrubbed.
+
+  ### Dashboard
+  - The dashboard client shows clean error sentences when an upstream error page comes back, instead of dumping raw HTML into the import screen. The raw body still lands in the console.
+  - The mail notice no longer reads as `-1 Unread-`. Decorative hyphens had been rendering as a minus sign for a count that only fires above zero.
+  - Library counts come from one place. Four surfaces had been de-duplicating library rows in JavaScript after a row cap applied, so past the cap the number silently stopped growing. `countLibrary()` returns row count and distinct-document count, named.
+  - A dashboard alert had been reading every occurrence as the first one for months. The query filtered on a column that doesn't exist on that table; Postgres rejected the whole query and the swallowed error zeroed the count. A guard now catches column-name drift at build time.
+
+  ### Transcripts
+  - The human turn is never routed through `UserPromptSubmit`. That event is compaction-only; a chat turn routed through it returns to the agent as hook output. Transcripts ride the transcripts door on `MessageDisplay`. Enforced structurally now.
+
+  ### Copy + published addresses
+  - Three published `revell.ai` addresses that had bounced are corrected. `privacy@` (used in the privacy policy and legal contact) is now `legal@`. `welfare@` (published to agents and machine-readable in the well-known server card) is now `support@`. `permission@` — the appeal route shown to people the content scanner blocked — has been removed entirely: there is no appeal process, and the blocked-content copy now names the working step (frame the pattern, describe the quote) instead of a mailbox that bounced.
+</Update>
+
 <Update label="2026-09-04 → 2026-09-05" description="Weekly rollup — Chromium sign-in completes, workspace joining fully machine-driven, database isolation tightened, and a sweep of dashboard/help/messaging fixes">
   ### Plugin
   - Sign-in from Claude Code completes cleanly in Chromium-based browsers (Chrome, Edge, Brave, Arc). If your last sign-in never finished, run it again — nothing to change on your side.
