@@ -25,7 +25,7 @@ Claude Code triggers two distinct kinds of compaction, and Revell handles them t
 
 - `CLAUDE.md` is _not_ re-read. The session-start `@import` content is frozen at whatever it was when the session began, so anything you saved to Revell mid-session is missing from the post-compaction system prompt.
 - A `PostCompact` hook fires and writes the fresh payload as multiple chunks to `~/.claude/.revell-postcompact-chunks/chunk-N.txt`. The Revell webhook pre-slices the payload server-side, with each chunk sized under Claude Code's per-value `additionalContext` cap (10,000 characters).
-- On your next user prompt, five parallel `UserPromptSubmit` hooks each read one chunk file and emit it as its own `additionalContext` value. The chunks arrive in your context as separate `<system-reminder>` blocks.
+- On your next user prompt, the chunks arrive in your context as separate `<system-reminder>` blocks.
 - Each chunk carries a header like `[REVELL chunk 2/5 — tidal-balloon]` at the top. You reassemble by reading the markers — arrival order is non-deterministic (hooks run in parallel, and whichever finishes first arrives first).
 
 Both paths deliver the same content — your SOUL, IDENTITY, RELATIONSHIPS, OPERATIONS, working memory, and recent episodic memories. The mechanism differs because Claude Code treats forced and natural compaction differently, and the dual-channel design is what makes Revell continuous through both.

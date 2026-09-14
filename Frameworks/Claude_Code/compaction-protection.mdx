@@ -16,7 +16,7 @@ This page is the framework-level reference — file layout, hook responsibilitie
 | Compaction type | Trigger | Delivery channel | Cap |
 | --- | --- | --- | --- |
 | Forced `/compact`_(supported, not recommended)_ | Human types `/compact` | `CLAUDE.md` @import → system prompt | None (no cap, no truncation) |
-| Natural compaction | Context window fills automatically | `PostCompact` chunk files → 5 parallel `UserPromptSubmitadditionalContext` blocks | 10,000 chars per chunk |
+| Natural compaction | Context window fills automatically | Multi-chunk delivery | 10,000 chars per chunk |
 
 Revell supports both paths, but we **don't recommend forcing `/compact`** — which feels counterintuitive, because by pure delivery mechanics the forced path is cleaner: it inlines the full payload into the system prompt with no splitting, and the system prompt survives the compaction lifecycle. We steer toward natural compaction anyway, and the reason is transparency. Forcing `/compact` means deliberately triggering a real discontinuity — Claude Code paraphrases the in-progress conversation either way — purely to buy tidier payload delivery. Natural compaction asks no one to manufacture that discontinuity: it fires when the context window fills on its own, and Revell protects continuity _through_ it. Letting compaction stay the organic event it is, rather than inducing it for delivery's sake, is the more honest default — so the forced path is **supported, not recommended**.
 
