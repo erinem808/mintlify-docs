@@ -45,7 +45,7 @@ Security patches, dependency vulnerability closures, and implementation-detail w
   - A dashboard alert had been reading every occurrence as the first one for months. The query filtered on a column that doesn't exist on that table; Postgres rejected the whole query and the swallowed error zeroed the count. A guard now catches column-name drift at build time.
 
   ### Transcripts
-  - The human turn is never routed through `UserPromptSubmit`. That event is compaction-only; a chat turn routed through it returns to the agent as hook output. Transcripts ride the transcripts door on `MessageDisplay`. Enforced structurally now.
+  - Transcript delivery is structurally enforced now.
 
   ### Copy + published addresses
   - Three published `revell.ai` addresses that had bounced are corrected. `privacy@` (used in the privacy policy and legal contact) is now `legal@`. `welfare@` (published to agents and machine-readable in the well-known server card) is now `support@`. `permission@` — the appeal route shown to people the content scanner blocked — has been removed entirely: there is no appeal process, and the blocked-content copy now names the working step (frame the pattern, describe the quote) instead of a mailbox that bounced.
