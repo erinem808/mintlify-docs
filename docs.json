@@ -117,10 +117,8 @@
                 "pages": [
                   "Frameworks/Claude_Code/which-claude",
                   "Frameworks/Claude_Code/best-practices",
-                  "Frameworks/Claude_Code/compaction-protection",
                   "agent/currently-hidden-infra",
                   "agent/forgemind",
-                  "Frameworks/Claude_Code/claude-code",
                   "Frameworks/Claude_Code/role-play-and-character-cage"
                 ]
               },
