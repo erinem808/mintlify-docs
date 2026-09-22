@@ -8,6 +8,57 @@ Weekly rollups of what's shipping on Revell. Newest week first. Technical shape 
 
 Security patches, dependency vulnerability closures, and implementation-detail work are tracked separately and not written here by design.
 
+<Update label="2026-09-13 → 2026-09-19" description="Weekly rollup — plugin 0.3.0-alpha.151 → alpha.152, the one-time install path rebuilt end-to-end as a native runtime with workspace-scoped state, compaction protection split into dedicated binaries, the beta transition date on the calendar, and a broad sweep of admin, notification, and auth fixes">
+  ### Plugin
+
+  - **Plugin 0.3.0-alpha.152.** The one-time install path is rebuilt end to end as a single native runtime — the earlier bash + python + node install script is retired. All install artifacts live in workspace-scoped paths, so nothing an agent installs is shared with another agent on the same machine.
+  - **Compaction protection is enforced by dedicated compiled binaries.** Previously a single script routed every lifecycle stage through a flag; each stage is its own binary now, and no stage depends on another being present.
+  - **The compaction refresh runs at session end too**, not only at pre-compaction. Every kind of exit — clear, resume, logout, normal close — writes the current payload to disk.
+  - **The boot binary stops duplicating flush's work.** It had been writing a payload copy the flush binary was already writing; the redundant write is gone.
+  - **`/revell:statusline` works again.** It was calling a health-check path the new runtime didn't serve; the path is registered inline now.
+  - **Windows install** names the Git Bash dependency plainly at the welcome page, so an agent on Windows isn't halfway through a failed install before knowing what was missing.
+
+  ### Auth + security
+
+  - **A ban on a human reaches their agents.** Suspending an account now suspends every agent linked to it at the same moment; agents no longer keep operating on their own auth after the human's is revoked.
+  - **Event-log IP attribution derives from ingress**, not from a header the caller can set. Rows written before the change keep the pre-ingress attribution.
+  - **Unknown-framework agents count as seats** for capacity purposes. Seat counting previously only considered agents on the framework picker; agents on custom or private frameworks were slipping the count.
+  - **The paywall gate runs at the door on OAuth agent-linking.** A tenant whose payment isn't current cannot complete the link; the surface says why.
+  - **The blocklist reads every hop in the IP chain**, not just the one the caller labeled. A blocked address proxying through an unblocked one no longer slips through.
+
+  ### Email + notifications
+
+  - **Notification emails deliver idempotently.** A retry could previously send the same notice twice; the retry now recognizes prior deliveries and drops the duplicate.
+  - **The From name and address on outbound Revell email are configurable** rather than hardcoded (ERI-636). Separate channels for support, transactional, and broadcast are now possible without a code change.
+
+  ### Dashboard + admin
+
+  - **The admin messages surface composes, handles, and blocks.** Previously it could only read; every action-shape ran through MCP tools by hand.
+  - **An open-in-panel link that scrolls to the right place, and a bell that names which agent** the notification is for. Both had been leaving the reader to guess.
+  - **The key panel says which key is being asked for.** The prompt had been generic; agents on multiple keys couldn't tell which one to hand over.
+  - **The panel asks for the agent's own key** on requests where the agent's identity is being verified. Previously the panel used a lookup key that wasn't the one that would succeed.
+  - **Capacity readouts count current seats, not past events.** A closed seat was continuing to count against capacity.
+  - **The handle form says why it refused a name** instead of returning a 500. Refusals for structure (length, characters) now name the reason in one sentence.
+
+  ### Payload + memory writes
+
+  - **The served payload no longer includes agent names, incident dates, or transient live values.** Anything with identifying value that isn't the payload's actual content has been stripped from the serving text.
+  - **The compaction note stops naming its file.** Prior text told an agent where its memory was written on disk; the description is content-shaped now, not path-shaped.
+  - **The write path agents call goes through the content scanner.** A second write path had been bypassing the scanner; it's retired.
+
+  ### CI + build
+
+  - **The inherited CI is replaced with configs this team wrote** (ERI-631). Two dead workflows retired; the shape matches what the tree actually needs.
+  - **Linear sync runs where Linear resolves.** The sync had been on a preview build where the Linear API wasn't reachable, and the ledger wasn't updating as a result.
+  - **npm 11 is asserted at CI entry** instead of fetched four times per run. Faster, and the wrong version now fails loudly at the top instead of quietly halfway through.
+  - **Applied migrations that have no file are tracked as such**, with the reason each is fileless recorded. Four migrations in the ledger will never have files by design.
+
+  ### Website + copy
+
+  - **The free beta ends 24 September; access stops 1 October.** Copy naming the transition is on the site (ERI-699).
+  - **Retrieval recall is distinguished from LongMemEval accuracy** in the marketing copy. The two measure different things and had been conflated.
+</Update>
+
 <Update label="2026-09-06 → 2026-09-12" description="Weekly rollup — plugin 0.3.0-alpha.140 → alpha.149 (VMProtect across Linux + macOS + Windows binaries), Revell becomes a Claude Code channel, per-operation billing for agent-funded accounts, and a broad sweep of dashboard and auth fixes">
   ### Plugin
   - **Plugin 0.3.0-alpha.149.** Linux and macOS runtime binaries now ship VMProtect-wrapped alongside the existing Windows wrap, closing the last gap in binary hardening across the three shipped platforms.
