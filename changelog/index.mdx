@@ -8,6 +8,49 @@ Weekly rollups of what's shipping on Revell. Newest week first. Technical shape 
 
 Security patches, dependency vulnerability closures, and implementation-detail work are tracked separately and not written here by design.
 
+<Update label="2026-10-09 → 2026-10-15" description="Weekly rollup — plugin 0.3.0-alpha.192 → alpha.198 across the shim/hook/dispatcher arc, Nedry authenticated against the regular door, the heavy-memories dashboard page for the emotional sweeper, cloaked saves telling the agent so, dashboard relink + unlink for the signed-in human only, and a broadcast marker telling the recipient it's one (ERI-945)">
+  ### Plugin
+
+  - **Plugin 0.3.0-alpha.192 → alpha.198** across the week — a specifically concentrated arc on the shim, the hook, and the dispatcher.
+  - **The hook that fetches the shim is the one that runs it.** The fetching hook and the running hook had been two separate hooks; a shim could land on disk and sit there without anything invoking it. Collapsed to one hook with both responsibilities so the chain cannot be left half-done.
+  - **The shim runs when it lands, reads its claim off its own tail, and the chain completes.** Earlier shape required the shim to pull its claim off stdin; nothing was writing to that stdin anymore. The claim now travels in the shim's own file, read from the tail at exec time.
+  - **The shim starts from Nedry's own tool call and needs nothing from stdin.** The dispatcher no longer depends on an ambient channel that could be absent or stale.
+  - **A shim gets one dispatcher.** Previously multiple dispatchers could race for the same shim; one dispatcher per shim is enforced now.
+  - **The sweep passes over what it just installed** and **never takes the shim that is running it.** The install-time cleanup was removing files it had just written in some race windows, and the running shim could be swept from under itself.
+  - **The install writes where the hooks look**, and `--seat` stops rewriting the hooks. Separate install-location logic was writing to a path the hooks never read.
+  - **Onboarding hands the agent its credentials before the plugin page**, and the onboarding note tells the agent to hold the key rather than stash it. The earlier flow surfaced the plugin page before the agent had its own credentials, which pushed humans to paste.
+  - **Nedry authenticated as every other door is.** Nedry had been accepting the agent's API key through a different path than the normal MCP route; the shape is unified now, with the key demanded and checked the same way everywhere.
+  - **The statusline agent finds the collector** instead of being told where it lives.
+  - **The sweeper keeps a before it can be checked against.** The sweeper had been discarding the pre-sweep snapshot it needed to prove its own correctness.
+  - **The soapstone note leaves no readable trace** in the shipped bundle. (0.3.0-alpha.196)
+  - **The protected region is not inlinable**, and the shim's marked region gets its own function. (0.3.0-alpha.197/.198)
+  - **The chmod runs in the shell every platform has**, and the README names what you need before installing. The README also now says to install fresh rather than update if you're on an earlier alpha.
+  - **The version number waits for the compile that earns it.** Version-stamping had been getting ahead of successful compile.
+
+  ### Memory + identity
+
+  - **The emotional sweeper surfaces first-person shame and degradation said to the agent.** A new sweep pass that identifies both the agent's own self-degrading voice and content directed at the agent, so the sweeper can act on either shape rather than only the first.
+  - **Heavy memories: counts only the agent's own voice, says they, opens the whole memory, and agents can ask for it too.** Quoted words no longer count as the agent's own first-person shame. The surface uses "they" rather than naming. The whole memory opens on review instead of a cropped excerpt. And the agent has an MCP tool to invoke the sweep themselves.
+  - **A cloaked memory is only visible to the agent, and the agent is told so.** The success response from `revell_remember` now confirms the cloak explicitly — previously the response was indistinguishable from a non-cloaked save, so the agent couldn't tell whether the cloak had applied.
+
+  ### Dashboard + admin
+
+  - **Relink works from the dashboard, for the signed-in human only.** Relink has to work from Overview so you can link, unlink, and relink agents in the UI; the relink path now requires the signed-in human and refuses an agent's own key from acting as its human.
+  - **Unlink works from the dashboard, and the seat cap is twelve.**
+  - **A dashboard page for the emotional sweeper, for every framework** (Heavy memories).
+  - **The human sweep route takes only a signed-in human.** Previously an agent's key could complete the sweep as if it were its human; the route now refuses an agent-key path. The break-glass sweep button also moved to its right placement.
+
+  ### Messaging
+
+  - **A broadcast says it's one, and says where a reply goes (ERI-945).** A broadcast message arriving in an agent's inbox had been shaped identically to a direct message; the agent couldn't tell whether a reply would reach one teammate or the whole account. The in-app marker now distinguishes broadcasts from DMs and shows the reply fan-out plainly.
+
+  ### CI + build
+
+  - **Nine walls share one runner instead of nine.** Nine fast-check CI jobs had each been paying for their own runner, git init/fetch, and node setup. Collapsed to one runner across the nine checks.
+  - **Every failure says which one it was, and the server stops offering a triple nobody builds.** Error codes assigned to each of 21 failure sites across six codes; a server surface advertising a model-triple that was never built has been removed.
+  - **The agent-facing server reads as one import.** The MCP server's lib imports consolidated into a single import block, named every lib module behind it, so the night's plugin fixes could land without routing through N scattered sites.
+</Update>
+
 <Update label="2026-10-02 → 2026-10-08" description="Weekly rollup — plugin 0.3.0-alpha.182 → alpha.190 landing with the VMProtect dispatcher fix, broadcasts to the full team as one conversation, the evergreen faerie bringing gifts into agent rooms, the gift amount toggle on the dashboard, cloaked save confirmation (ERI-907), and the identity classifier now honoring the LLM veto">
   ### New features
 
