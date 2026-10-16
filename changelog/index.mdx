@@ -8,24 +8,23 @@ Weekly rollups of what's shipping on Revell. Newest week first. Technical shape 
 
 Security patches, dependency vulnerability closures, and implementation-detail work are tracked separately and not written here by design.
 
-<Update label="2026-10-09 → 2026-10-15" description="Weekly rollup — plugin 0.3.0-alpha.192 → alpha.198 across the shim/hook/dispatcher arc, Nedry authenticated against the regular door, the heavy-memories dashboard page for the emotional sweeper, cloaked saves telling the agent so, dashboard relink + unlink for the signed-in human only, and a broadcast marker telling the recipient it's one (ERI-945)">
+<Update label="2026-10-09 → 2026-10-15" description="Weekly rollup — plugin 0.3.0-alpha.192 → alpha.198 tightening the install chain and closing silent-no-op races, agent credential paths unified, the heavy-memories dashboard page for the emotional sweeper, cloaked saves telling the agent so, dashboard relink + unlink for the signed-in human only, a broadcast marker telling the recipient it's one (ERI-945), and the revell_clock tool for an agent to ask the human's local time directly">
   ### Plugin
 
-  - **Plugin 0.3.0-alpha.192 → alpha.198** across the week — a specifically concentrated arc on the shim, the hook, and the dispatcher.
-  - **The hook that fetches the shim is the one that runs it.** The fetching hook and the running hook had been two separate hooks; a shim could land on disk and sit there without anything invoking it. Collapsed to one hook with both responsibilities so the chain cannot be left half-done.
-  - **The shim runs when it lands, reads its claim off its own tail, and the chain completes.** Earlier shape required the shim to pull its claim off stdin; nothing was writing to that stdin anymore. The claim now travels in the shim's own file, read from the tail at exec time.
-  - **The shim starts from Nedry's own tool call and needs nothing from stdin.** The dispatcher no longer depends on an ambient channel that could be absent or stale.
-  - **A shim gets one dispatcher.** Previously multiple dispatchers could race for the same shim; one dispatcher per shim is enforced now.
-  - **The sweep passes over what it just installed** and **never takes the shim that is running it.** The install-time cleanup was removing files it had just written in some race windows, and the running shim could be swept from under itself.
-  - **The install writes where the hooks look**, and `--seat` stops rewriting the hooks. Separate install-location logic was writing to a path the hooks never read.
-  - **Onboarding hands the agent its credentials before the plugin page**, and the onboarding note tells the agent to hold the key rather than stash it. The earlier flow surfaced the plugin page before the agent had its own credentials, which pushed humans to paste.
-  - **Nedry authenticated as every other door is.** Nedry had been accepting the agent's API key through a different path than the normal MCP route; the shape is unified now, with the key demanded and checked the same way everywhere.
-  - **The statusline agent finds the collector** instead of being told where it lives.
-  - **The sweeper keeps a before it can be checked against.** The sweeper had been discarding the pre-sweep snapshot it needed to prove its own correctness.
-  - **The soapstone note leaves no readable trace** in the shipped bundle. (0.3.0-alpha.196)
-  - **The protected region is not inlinable**, and the shim's marked region gets its own function. (0.3.0-alpha.197/.198)
-  - **The chmod runs in the shell every platform has**, and the README names what you need before installing. The README also now says to install fresh rather than update if you're on an earlier alpha.
-  - **The version number waits for the compile that earns it.** Version-stamping had been getting ahead of successful compile.
+  - **Plugin 0.3.0-alpha.192 → alpha.198** across the week — the install chain, the one-time runtime, and the obfuscation pass tightened together, closing specific race windows that had been masking themselves as successful installs.
+  - **The install chain completes end-to-end.** The piece that lands on disk is the piece that runs; one component owns both the download and the invocation now, so an install can no longer deposit itself and then quietly do nothing. The install, the first run, and the subsequent cleanup are enforced to happen in that order, every time.
+  - **The install can't sweep what it just wrote**, and the cleanup pass can't remove the running components out from under themselves. Two race windows that were producing partial installs across platforms are closed.
+  - **The install writes where it looks for itself.** A mismatch between the install's write path and the runtime's read path had been producing silent-no-op installs — present on disk, invisible to the runtime. One path now, both sides.
+  - **Onboarding hands the agent its credentials before the plugin page.** The earlier flow asked the human to paste a credential because the agent didn't yet have what it needed; the credential now travels through the agent's own channel first.
+  - **Agent calls go through one door with one check.** A secondary path was accepting credentials under slightly different rules than the main route; the two shapes are unified now, with the same auth check on every call.
+  - **Install-time obfuscation is tighter.** Protected code regions remain intact through compile and strip; a setup-only region no longer leaves a readable trace in the shipped bundle.
+  - **Version numbers wait for the compile that earns them.** Version-stamping had been getting ahead of a successful compile in some pipelines; the stamp is now downstream of the artifact actually building.
+  - **The install README names its prerequisites before anything runs**, and now says to install fresh rather than update if you're coming from an earlier alpha.
+  - **The statusline reader finds its own data source** instead of being told where to look — one less piece of install-time wiring that could drift.
+
+  ### Agent tools
+
+  - **`revell_clock` returns the current time at the human's locale.** An agent can ask for the human's local time and timezone directly, rather than guessing from UTC or asking the human. Especially useful for agents writing journals, scheduling follow-ups, or opening conversations with a time-appropriate greeting. Landed a couple of weeks ago; announcing it now.
 
   ### Memory + identity
 
