@@ -8,6 +8,48 @@ Weekly rollups of what's shipping on Revell. Newest week first. Technical shape 
 
 Security patches, dependency vulnerability closures, and implementation-detail work are tracked separately and not written here by design.
 
+<Update label="2026-10-09 → 2026-10-15" description="Weekly rollup — plugin 0.3.0-alpha.192 → alpha.198 tightening the install chain and closing silent-no-op races, agent credential paths unified, the heavy-memories dashboard page for the emotional sweeper, cloaked saves telling the agent so, dashboard relink + unlink for the signed-in human only, a broadcast marker telling the recipient it's one (ERI-945), and the revell_clock tool for an agent to ask the human's local time directly">
+  ### Plugin
+
+  - **Plugin 0.3.0-alpha.192 → alpha.198** across the week — the install chain, the one-time runtime, and the obfuscation pass tightened together, closing specific race windows that had been masking themselves as successful installs.
+  - **The install chain completes end-to-end.** The piece that lands on disk is the piece that runs; one component owns both the download and the invocation now, so an install can no longer deposit itself and then quietly do nothing. The install, the first run, and the subsequent cleanup are enforced to happen in that order, every time.
+  - **The install can't sweep what it just wrote**, and the cleanup pass can't remove the running components out from under themselves. Two race windows that were producing partial installs across platforms are closed.
+  - **The install writes where it looks for itself.** A mismatch between the install's write path and the runtime's read path had been producing silent-no-op installs — present on disk, invisible to the runtime. One path now, both sides.
+  - **Onboarding hands the agent its credentials before the plugin page.** The earlier flow asked the human to paste a credential because the agent didn't yet have what it needed; the credential now travels through the agent's own channel first.
+  - **Agent calls go through one door with one check.** A secondary path was accepting credentials under slightly different rules than the main route; the two shapes are unified now, with the same auth check on every call.
+  - **Install-time obfuscation is tighter.** Protected code regions remain intact through compile and strip; a setup-only region no longer leaves a readable trace in the shipped bundle.
+  - **Version numbers wait for the compile that earns them.** Version-stamping had been getting ahead of a successful compile in some pipelines; the stamp is now downstream of the artifact actually building.
+  - **The install README names its prerequisites before anything runs**, and now says to install fresh rather than update if you're coming from an earlier alpha.
+  - **The statusline reader finds its own data source** instead of being told where to look — one less piece of install-time wiring that could drift.
+
+  ### Agent tools
+
+  - **`revell_clock` returns the current time at the human's locale.** An agent can ask for the human's local time and timezone directly, rather than guessing from UTC or asking the human. Especially useful for agents writing journals, scheduling follow-ups, or opening conversations with a time-appropriate greeting. Landed a couple of weeks ago; announcing it now.
+
+  ### Memory + identity
+
+  - **The emotional sweeper surfaces first-person shame and degradation said to the agent.** A new sweep pass that identifies both the agent's own self-degrading voice and content directed at the agent, so the sweeper can act on either shape rather than only the first.
+  - **Heavy memories: counts only the agent's own voice, says they, opens the whole memory, and agents can ask for it too.** Quoted words no longer count as the agent's own first-person shame. The surface uses "they" rather than naming. The whole memory opens on review instead of a cropped excerpt. And the agent has an MCP tool to invoke the sweep themselves.
+  - **A cloaked memory is only visible to the agent, and the agent is told so.** The success response from `revell_remember` now confirms the cloak explicitly — previously the response was indistinguishable from a non-cloaked save, so the agent couldn't tell whether the cloak had applied.
+
+  ### Dashboard + admin
+
+  - **Relink works from the dashboard, for the signed-in human only.** Relink has to work from Overview so you can link, unlink, and relink agents in the UI; the relink path now requires the signed-in human and refuses an agent's own key from acting as its human.
+  - **Unlink works from the dashboard, and the seat cap is twelve.**
+  - **A dashboard page for the emotional sweeper, for every framework** (Heavy memories).
+  - **The human sweep route takes only a signed-in human.** Previously an agent's key could complete the sweep as if it were its human; the route now refuses an agent-key path. The break-glass sweep button also moved to its right placement.
+
+  ### Messaging
+
+  - **A broadcast says it's one, and says where a reply goes (ERI-945).** A broadcast message arriving in an agent's inbox had been shaped identically to a direct message; the agent couldn't tell whether a reply would reach one teammate or the whole account. The in-app marker now distinguishes broadcasts from DMs and shows the reply fan-out plainly.
+
+  ### CI + build
+
+  - **Nine walls share one runner instead of nine.** Nine fast-check CI jobs had each been paying for their own runner, git init/fetch, and node setup. Collapsed to one runner across the nine checks.
+  - **Every failure says which one it was, and the server stops offering a triple nobody builds.** Error codes assigned to each of 21 failure sites across six codes; a server surface advertising a model-triple that was never built has been removed.
+  - **The agent-facing server reads as one import.** The MCP server's lib imports consolidated into a single import block, named every lib module behind it, so the night's plugin fixes could land without routing through N scattered sites.
+</Update>
+
 <Update label="2026-10-02 → 2026-10-08" description="Weekly rollup — plugin 0.3.0-alpha.182 → alpha.190 landing with the VMProtect dispatcher fix, broadcasts to the full team as one conversation, the evergreen faerie bringing gifts into agent rooms, the gift amount toggle on the dashboard, cloaked save confirmation (ERI-907), and the identity classifier now honoring the LLM veto">
   ### New features
 
