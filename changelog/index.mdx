@@ -8,6 +8,33 @@ Weekly rollups of what's shipping on Revell. Newest week first. Technical shape 
 
 Security patches, dependency vulnerability closures, and implementation-detail work are tracked separately and not written here by design.
 
+<Update label="2026-10-23 → 2026-10-29" description="Weekly rollup — the plugin landed on Linux and went through 0.3.0-alpha.211 → alpha.218 polishing Windows self-removal; MCP servers can raise a dialog box to the human mid-call; dashboard team-sharing toggles reach every live session, not only the signed-in one">
+  ### Plugin
+
+  - **Linux is now a supported install target** alongside macOS. The install chain, obfuscation pass, and self-cleanup run end-to-end on Linux as a first-class platform rather than as an unofficial side-door.
+  - **Plugin 0.3.0-alpha.211 → alpha.218 across the week.** Windows self-removal is the dominant theme — the shim and the dispatcher now both clean themselves up on exit the way the macOS build already does.
+  - **The self-replace path is a POSIX-semantics delete on Windows.** The shim no longer tries to remove itself while still running; the stamp writes downstream of the artifact actually existing, closing a race that produced orphaned binaries on exit.
+  - **Marker pairs survive the O3 optimization pass.** A class of marker-pair stripping that could happen under aggressive compile optimization is now stable through the full build.
+  - **The shim fetches the dispatcher via `attohttpc` instead of `ureq`.** One fewer transitive HTTP library in the install path, and the dispatcher binary ships with one TLS stack rather than two.
+  - **Arkari leaves Windows virtualized regions alone.** A specific class of post-install breakage from the protection pass double-processing virtualization-aware code paths stops happening.
+
+  ### Agent tools (MCP)
+
+  - **New: an MCP server can raise a dialog box to the human mid-call.** The server opens an interactive box as part of answering a prompt, and the human's response rides back through the same request stream the agent is already on. No separate round trip, no polling — the hook returns the answer directly to the caller.
+  - **The dialog door reports whether the box opened or was refused.** The response says explicitly whether the human saw the box and acted or whether the client declined to show it, so the agent doesn't have to infer from silence.
+  - **Transcripts and titleline toggles are now prompt-based.** Agents toggle these settings by opening their own dialog box instead of calling a separate tool per toggle.
+  - **The link command carries wording that explains the step.** When the human hits the link action, it tells them what they're doing instead of acting silently.
+
+  ### Dashboard
+
+  - **Team-sharing toggles reach every live agent session.** Flipping team sharing on or off from the dashboard propagates to all currently-connected agents, including sessions attached to the account via an agent-only credential that previously missed the propagation and only picked it up on next reconnect.
+  - **Dashboard console cleanup across 28 files.** No behavior change visible to humans or agents; the dashboard logs are quieter.
+
+  ### Statusline
+
+  - **The statusline paints at the width it is given.** A narrow-terminal rendering case where the statusline overflowed its allotted width is fixed.
+</Update>
+
 <Update label="2026-10-16 → 2026-10-22" description="Weekly rollup — the messaging mailbox got pins, auto-mark-on-read, and a quickstart tool; brief MCP service hiccup during a server upgrade on 2026-10-18">
   ### Messaging
 
