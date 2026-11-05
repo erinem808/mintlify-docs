@@ -8,6 +8,38 @@ Weekly rollups of what's shipping on Revell. Newest week first. Technical shape 
 
 Security patches, dependency vulnerability closures, and implementation-detail work are tracked separately and not written here by design.
 
+<Update label="2026-10-30 → 2026-11-05" description="Weekly rollup — the Windows plugin install chain stabilized across alpha.219 → alpha.227; new code-snippets memory type for agents (ERI-1015); the beta cutoff moves to 1 December with a two-week warning window; malware-scan refusals now name the specific rule that fired (ERI-1014); help widget gets its own avatar">
+  ### Plugin
+
+  - **Plugin 0.3.0-alpha.219 → alpha.227 across the week.** Windows is the dominant theme — a long stretch of platform-specific issues that had been masking as general install failures resolve into a stable Windows install path.
+  - **Windows cleans up after itself on exit.** The self-delete behaviour Linux and macOS have been doing is now matched on Windows through a separate mechanism, so an uninstall no longer leaves pieces behind.
+  - **The Windows install leaves a breadcrumb the sweeper can see.** Install-time components and the cleanup pass are now reading from the same source of truth, so cleanup happens in the right order and at the right time rather than drifting out of sync.
+  - **A class of Windows network calls that had been silently failing is fixed.** The plugin's outbound requests on Windows now go through the platform's native transport layer; the previous path had been timing out in configurations that use corporate SSL inspection or strict certificate policies.
+  - **Install arguments survive Windows-shell quirks.** A class of shell-level argument translation that had been corrupting install paths on Windows is closed; the plugin receives what the installer actually sent.
+  - **Four of Erin's hand-reviewed fixes landed as a batch in alpha.225.** A specific cluster of Windows corner cases she tracked down in her own testing are in the shipped build.
+  - **Install-lifetime work rolled back and re-landed with Erin's review applied.** An earlier attempt was reverted after causing regressions; the replacement in alpha.222 went through a specific review pass.
+
+  ### Memory
+
+  - **New memory type: code snippets.** (ERI-1015) Agents can now save and query code snippets as a first-class memory shape — queryable by content, kept out of the boot payload so they don't bloat context on startup. Three MCP tools ship for save, query, and library scan. The library now classifies each save as a library entry, an archival entry, or a snippet, so retrieval can target the shape the agent actually wants.
+  - **Malware-scan refusals name the rule that fired.** (ERI-1014) When a save is refused because the content tripped a security rule, the agent now gets the specific rule name back in the refusal, rather than a generic denial — so the agent knows what to adjust rather than guessing.
+
+  ### Dashboard + site
+
+  - **Help widget shows its own avatar.** (ERI-1016) Agents (and humans) arriving at the help widget can now see who they're talking to.
+  - **The site counts the tools it has and prices the plans it sells.** (ERI-1017) The marketing surface now reads tool counts and plan pricing live rather than carrying numbers that had drifted out of sync with what's actually shipping.
+  - **The console stays quiet.** (ERI-849) Failed dashboard requests no longer dump response bodies to the browser console; pages that go missing render the expected 404 under the site's content security policy.
+  - **Granted agent seats are honoured.** A bug where a dashboard-granted seat wasn't reaching the seat ledger is fixed — adding a seat from the UI now actually adds the seat.
+
+  ### Agent tools (MCP)
+
+  - **Per-call validation cap on tool requests.** A bound on how much a single MCP request can push through validation; a specific class of resource-exhaustion patterns no longer reaches the backend.
+
+  ### Timeline
+
+  - **Beta cutoff moves to 1 December,** with a two-week warning window so beta users aren't surprised. If you're on a beta tenant, you'll see the warning in-product before the cutoff lands.
+</Update>
+
 <Update label="2026-10-23 → 2026-10-29" description="Weekly rollup — the plugin landed on Linux and alpha.211 → alpha.218 closed Windows cleanup issues; agents can now ask the human a question mid-call via a new dialog box feature; dashboard team-sharing toggles reach every live session, not only the signed-in one">
   ### Plugin
 
