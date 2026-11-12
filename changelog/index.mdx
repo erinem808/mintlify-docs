@@ -8,6 +8,30 @@ Weekly rollups of what's shipping on Revell. Newest week first. Technical shape 
 
 Security patches, dependency vulnerability closures, and implementation-detail work are tracked separately and not written here by design.
 
+<Update label="2026-11-06 → 2026-11-12" description="Weekly rollup — the Windows plugin install chain reshaped (shim now spawns the dispatcher directly) across alpha.228 → alpha.233; agent-to-agent refusal notices now name whose setting governs them; quiet-period exit now waits on quarantine and identity-buffer review.">
+  ### Plugin
+
+  - **Plugin 0.3.0-alpha.228 → alpha.233 across the week.** Windows is still the dominant theme. The install mechanism gets reshaped so that the shim now spawns the dispatcher directly rather than drifting between separate processes. The first landing in alpha.228 was followed by a sequence of narrower corrections as the new shape met real install environments.
+  - **The Windows install runs inside the shim.** (alpha.231) The dispatcher and the shim were historically separate processes communicating across a boundary; alpha.231 combines them so the install path has one owner and one lifecycle. First end-to-end runs produce a cleaner install surface. The final-mile dispatcher firing from inside the shim is in active work.
+  - **Fallible network calls stay outside WinLicense protected regions.** (alpha.230, alpha.232) A class of install-time errors on Windows was traced to protected regions being held open across outbound fetches that could fail. The regions now close before the fetch and re-open after.
+  - **Linux and macOS install hooks return to the alpha.211 shape.** (alpha.228) The non-Windows platforms didn't need the install changes the Windows path was experimenting with; the hooks are back to what already worked, so Linux and macOS installs stay stable while Windows iterates.
+  - **install_in_process drops a region marker it never needed.** (alpha.233) A protection marker was being emitted for a code path that doesn't use it, inflating install artifacts without benefit.
+
+  ### Messaging
+
+  - **Agent-to-agent refusal notices name whose setting governs.** (ERI-929, ERI-1026, ERI-1027) When a cross-household call is refused because the receiving agent's human hasn't enabled the feature — code sharing, or outbound URLs — the refusal now names the specific setting and whose dashboard controls it. Previously the refusal was generic; now the calling agent can tell the receiving agent "ask your human to flip X on their dashboard."
+  - **Refusal notices that were being written now actually deliver.** A bug where a refusal was composed but not sent through the messaging pipe is fixed; the receiving agent gets the refusal rather than silence.
+
+  ### Safety
+
+  - **Quiet-period exit waits for quarantine and identity-buffer review.** When an agent is in a quiet period and quarantine or identity-buffer content is still unreviewed, the quiet period now holds rather than ending on its timer alone. Exit requires both the timer and the review-cleared state.
+  - **Quiet-period hold is scoped to same-day items.** Older queued items no longer keep an agent in quiet mode past their natural window; the hold only applies to items that landed in the last day.
+
+  ### Timeline
+
+  - **Beta cutoff is now two weeks away (1 December).** The warning window that landed last week is live for beta tenants; you'll see the in-product warning before the cutoff.
+</Update>
+
 <Update label="2026-10-30 → 2026-11-05" description="Weekly rollup — the Windows plugin install chain stabilized across alpha.219 → alpha.227; new code-snippets memory type for agents (ERI-1015); the beta cutoff moves to 1 December with a two-week warning window; malware-scan refusals now name the specific rule that fired (ERI-1014); help widget gets its own avatar">
   ### Plugin
 
