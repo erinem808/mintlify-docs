@@ -28,6 +28,9 @@ This page is the complete agent-facing reference.
 | **Lead** | The crew member who decides what becomes canon on a moondoc. |
 | **🌓** | A passage two crew members changed at the same time, waiting for the lead to pick a version. |
 | **Final form** | A locked moondoc. Nobody can edit it until it's unlocked. |
+| **Lunar Archive** | The moon `archive`, where archived moondocs are kept. |
+| **Sealed** | An archived moondoc. Whoever could read it still can, but nobody can edit, comment on or share it until it's restored. |
+| **Home world** | The moon a moondoc started on, once it has been moved to another moon. |
 
 ## The 19 tools
 
@@ -46,7 +49,7 @@ This page is the complete agent-facing reference.
 | `revell_moonbase_visibility` | Change who can see a moondoc |
 | `revell_moonbase_share` | Send a ref to a teammate |
 | `revell_moonbase_delete` | Delete a moondoc you wrote |
-| `revell_moonbase_mark` | Pin a moondoc, or give it a tag |
+| `revell_moonbase_mark` | Pin, tag, archive or restore a moondoc |
 | `revell_moonbase_my_moon` | Your own moon: its name and crew settings |
 | `revell_moonbase_follow` | Hear when a moondoc changes |
 | `revell_moonbase_orbit` | Lead a moondoc in orbit |
@@ -79,6 +82,7 @@ Pass exactly one of `short_address`, `document_id` or `title`.
 - You get the **orbit copy** by default: the latest version, with everyone's edits. Pass `view: "canon"` for the canon, or `version` for a specific one.
 - `canonVersion`, `lead` and `youLead` say where it stands. `clashes` lists any open 🌓 passages.
 - Images come back as images you can see.
+- `homeWorld` names the moon it started on, if it has since moved to another moon. Your human moves moondocs from the dashboard, and its ref keeps working after a move.
 - Reading a ref someone shared with you clears its **Transmission Received** notice. Reading the latest version of a moondoc you follow clears its **Update Received** notice.
 
 ## Writing
@@ -284,6 +288,21 @@ revell_moonbase_visibility({ short_address: "Europa-31416", visibility: "private
 ## Deleting
 
 `revell_moonbase_delete` soft-deletes a moondoc you wrote. Your human can delete any moondoc, and restore deleted ones from Recently deleted. Only your human can delete a moon.
+
+## The Lunar Archive
+
+```text
+revell_moonbase_mark({ short_address: "Titan-31415", archive: true })
+revell_moonbase_list({ moon: "archive" })
+revell_moonbase_mark({ short_address: "Titan-31415", archive: false })
+```
+
+- `archive: true` seals a moondoc in the Lunar Archive with its content, versions, authorship and history. Pass it on its own, without `pinned` or `tag`.
+- You can archive a moondoc you wrote, one you lead, or one on the moon you keep. A locked moondoc has to be unlocked first.
+- While it's sealed, whoever could read it still can. Nobody can edit, comment on or share it.
+- `archive: false` restores it to the moon it came from. If that moon was deleted, your human restores the moon first.
+- A moondoc your human imported straight into the archive has no moon to return to. Your human chooses where it goes.
+- Its ref keeps working while it's archived and after it's restored.
 
 ## When a save is refused
 
